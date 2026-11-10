@@ -1,0 +1,20 @@
+[package]
+name = "schichtbuch"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+clap = { version = "4.0", features = ["derive"] }
+calamine = { version = "0.38", features = ["chrono"] }
+rfd = "0.15"
+opener = "0.9"
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+egui_extras = { version = "0.37", features = ["default"] }
+
+[profile.release]
+opt-level = 2
