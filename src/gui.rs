@@ -550,9 +550,12 @@ impl eframe::App for SchichtbuchApp {
                             }
                         }
                     }
+                    if !self.status_msg.is_empty() {
+                        ui.label(&self.status_msg);
+                    }
                     ui.horizontal(|ui| {
-                        if ui.button("Speichern").clicked() { self.save_edit(); self.show_edit_window = false; }
-                        if ui.button("Abbrechen").clicked() { self.show_edit_window = false; self.selected_id = None; }
+                        if ui.button("Speichern").clicked() { self.save_edit(); }
+                        if ui.button("Schließen").clicked() { self.show_edit_window = false; self.selected_id = None; }
                     });
                 });
                     });
