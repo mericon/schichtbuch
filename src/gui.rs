@@ -485,7 +485,10 @@ impl eframe::App for SchichtbuchApp {
                         }); ui.end_row();
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(260.0)); ui.end_row();
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(260.0)); ui.end_row();
-                        ui.label("Maßnahme:"); ui.add(egui::TextEdit::singleline(&mut self.new_action).desired_width(260.0)); ui.end_row();
+                        ui.label("Maßnahme:"); 
+                        egui::ScrollArea::vertical().max_height(15.0 * 14.0).auto_shrink([false, false]).show(ui, |ui| {
+                            ui.add(egui::TextEdit::multiline(&mut self.new_action).desired_rows(4).desired_width(260.0));
+                        }); ui.end_row();
                         ui.label("Bilder:"); ui.horizontal(|ui| {
                             ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(260.0));
                             if ui.button("Anhängen").clicked() {
@@ -511,7 +514,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Eintrag bearbeiten").resizable(true).auto_sized().default_width(460.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
