@@ -306,7 +306,9 @@ impl SchichtbuchApp {
 impl eframe::App for SchichtbuchApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if self.last_applied_dark != Some(self.dark_mode) {
-            if self.dark_mode { ui.ctx().set_visuals(egui::Visuals::dark()); } else { ui.ctx().set_visuals(egui::Visuals::light()); }
+            let v = if self.dark_mode { egui::Visuals::dark() } else { egui::Visuals::light() };
+            ui.ctx().set_visuals(v.clone());
+            ui.ctx().global_style_mut(|st| { st.visuals = v; });
             self.last_applied_dark = Some(self.dark_mode);
         }
         egui::Panel::top("top").show(ui, |ui| {
