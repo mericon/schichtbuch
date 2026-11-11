@@ -69,6 +69,11 @@ impl Store {
             CREATE TABLE IF NOT EXISTS master_responsible (name TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS master_statuses (name TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS master_shifts (name TEXT PRIMARY KEY);
+
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL DEFAULT ''
+            );
             "#,
         )?;
         // migration: add last_shift column if missing
@@ -327,6 +332,15 @@ impl Store {
     pub fn rename_responsible(&self, old: &str, new: &str) -> Result<()> {
         self.conn.execute("UPDATE master_responsible SET name=?2 WHERE name=?1", params![old, new])?;
         self.conn.execute("UPDATE entries SET responsible=?2 WHERE responsible=?1", params![old, new])?;
+        Ok(())
+    }
+
+    pub fn get_setting(&self, key: &str) -> Result<String> {
+        self.conn.query_row("SELECT value FROM settings WHERE key=?1", params![key], |r| r.get(0))
+            .or_else(|_| Ok(String::new()))
+    }
+    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
+        self.conn.execute("INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value=?2", params![key, value])?;
         Ok(())
     }
 
