@@ -105,6 +105,7 @@ struct SchichtbuchApp {
     // handover
     ho_user: String,
     ho_taken_by: String,
+    ho_transition: String,
     ho_from: String,
     ho_to: String,
     ho_date: String,
@@ -181,6 +182,7 @@ impl SchichtbuchApp {
             edit_images: String::new(),
             ho_user: String::new(),
             ho_taken_by: String::new(),
+            ho_transition: "Früh -> Spät".into(),
             ho_from: "Früh".into(),
             ho_to: "Spät".into(),
             ho_date: today,
@@ -271,7 +273,7 @@ impl SchichtbuchApp {
             e.images = self.edit_images.clone();
             e.updated_at = chrono::Local::now().naive_local();
             match store.update_entry(&e) {
-                Ok(_) => { let _ = store.log_event("Eintrag bearbeitet", &self.current_user, &format!("{} | {}", e.plant, e.status), &e.id); self.status_msg = "Gespeichert".into(); self.reload(); }
+                Ok(_) => { let _ = store.log_event("Eintrag bearbeitet", &self.current_user, &format!("{} - {}", e.plant, e.fault), &e.id); self.status_msg = "Gespeichert".into(); self.reload(); }
                 Err(err) => self.status_msg = format!("Fehler: {}", err),
             }
         }
@@ -294,14 +296,23 @@ impl SchichtbuchApp {
         e.downtime = self.new_downtime.clone();
         e.images = self.new_images.clone();
         match store.insert_entry(&e) {
-            Ok(_) => { let _ = store.log_event("Neuer Eintrag", &self.current_user, &format!("{} | {}", e.plant, e.fault), &e.id); self.status_msg = format!("added {}", e.id); self.filter_date = self.new_date.clone(); self.filter_shift = self.new_shift.clone(); self.reload(); }
+            Ok(_) => { let _ = store.log_event("Neuer Eintrag", &self.current_user, &format!("{} - {}", e.plant, e.fault), &e.id); self.status_msg = format!("added {}", e.id); self.filter_date = self.new_date.clone(); self.filter_shift = self.new_shift.clone(); self.reload(); }
             Err(err) => self.status_msg = format!("err: {}", err),
         }
     }
 
     fn do_handover(&mut self) {
+        if self.ho_user.trim().is_empty() { self.ho_user = self.current_user.clone(); }
+        if self.ho_taken_by.trim().is_empty() { self.ho_taken_by = self.current_user.clone(); }
         let Some(store) = self.store.as_mut() else { return; };
         let date: NaiveDate = match self.ho_date.parse() { Ok(d) => d, Err(_) => { self.status_msg="bad date".into(); return; } };
+        let (f, t) = match self.ho_transition.as_str() {
+            "Spät -> Nacht" => ("Spät", "Nacht"),
+            "Nacht -> Früh" => ("Nacht", "Früh"),
+            _ => ("Früh", "Spät"),
+        };
+        self.ho_from = f.to_string();
+        self.ho_to = t.to_string();
         let from = Shift::from_str(&self.ho_from);
         let to = Shift::from_str(&self.ho_to);
         let archived = store.archive_completed(Some(date), Some(from)).unwrap_or(0);
@@ -906,10 +917,15 @@ impl SchichtbuchApp {
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
         egui::Grid::new("ho_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
             ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.ho_date).desired_width(260.0)); ui.end_row();
-            ui.label("Von Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_from).desired_width(260.0)); ui.end_row();
-            ui.label("Nach Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_to).desired_width(260.0)); ui.end_row();
-            ui.label("Benutzer:"); ui.add(egui::TextEdit::singleline(&mut self.ho_user).desired_width(260.0)); ui.end_row();
-            ui.label("Übernommen von:"); ui.add(egui::TextEdit::singleline(&mut self.ho_taken_by).desired_width(260.0)); ui.end_row();
+            ui.label("Übergabe:"); egui::ComboBox::from_id_salt("ho_transition").selected_text(&self.ho_transition).show_ui(ui, |ui| {
+                for t in ["Früh -> Spät", "Spät -> Nacht", "Nacht -> Früh"] { ui.selectable_value(&mut self.ho_transition, t.to_string(), t); }
+            }); ui.end_row();
+            ui.label("Übergeben von:"); egui::ComboBox::from_id_salt("ho_user").selected_text(if self.ho_user.is_empty() {"(wählen)"} else {&self.ho_user}).show_ui(ui, |ui| {
+                for r in &self.responsible.clone() { ui.selectable_value(&mut self.ho_user, r.clone(), r); }
+            }); ui.end_row();
+            ui.label("Übernommen von:"); egui::ComboBox::from_id_salt("ho_taken").selected_text(if self.ho_taken_by.is_empty() {"(wählen)"} else {&self.ho_taken_by}).show_ui(ui, |ui| {
+                for r in &self.responsible.clone() { ui.selectable_value(&mut self.ho_taken_by, r.clone(), r); }
+            }); ui.end_row();
         });
         if ui.button("Schichtübergabe durchführen").clicked() {
             self.do_handover();
