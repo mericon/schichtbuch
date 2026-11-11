@@ -340,7 +340,7 @@ impl eframe::App for SchichtbuchApp {
             }
         });
 
-        egui::CentralPanel::default().frame(egui::Frame::default().inner_margin(egui::Margin::same(38))).show(ui, |ui| {
+        egui::CentralPanel::default().frame(egui::Frame::default().fill(ui.visuals().panel_fill).inner_margin(egui::Margin::same(38))).show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
                 ui.selectable_value(&mut self.tab, Tab::Prio, "Prio offen");
