@@ -402,7 +402,7 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
                 egui::Window::new("Meldungs-Details").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     if entry.is_some() {
                         TableBuilder::new(ui)
                             .resizable(true)
@@ -458,7 +458,7 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 egui::Window::new("Neuer Eintrag").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(260.0)); ui.end_row();
                         ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(260.0)); ui.end_row();
@@ -502,7 +502,7 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 egui::Window::new("Eintrag bearbeiten").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                             for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
