@@ -206,6 +206,22 @@ impl Store {
         Ok(n as i64)
     }
 
+    /// Carry over open (not done) entries from one shift to another (Übernahme).
+    pub fn carry_over_open(&self, from: Shift, to: Shift, date: Option<NaiveDate>) -> Result<i64> {
+        let mut sql = "UPDATE entries SET shift=?1, last_shift=?2, updated_at=?3 WHERE archived=0 AND status<>'erledigt' AND shift=?4".to_string();
+        let mut args: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        args.push(Box::new(to.as_str().to_string()));
+        args.push(Box::new(from.as_str().to_string()));
+        args.push(Box::new(chrono::Local::now().naive_local().to_string()));
+        args.push(Box::new(from.as_str().to_string()));
+        if let Some(d) = date {
+            sql.push_str(" AND date=?5");
+            args.push(Box::new(d.to_string()));
+        }
+        let n = self.conn.execute(&sql, rusqlite::params_from_iter(args.iter().map(|b| b.as_ref())))?;
+        Ok(n as i64)
+    }
+
     pub fn search_archive(&self, query: &str) -> Result<Vec<Entry>> {
         let like = format!("%{}%", query);
         let mut stmt = self.conn.prepare(

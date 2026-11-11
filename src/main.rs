@@ -153,9 +153,7 @@ fn main() {
             let tosh = Shift::from_str(&to);
             // archive completed for this shift/date
             let archived = store.archive_completed(Some(dd), Some(fromsh)).unwrap_or(0);
-            // carried = open entries remaining
-            let open = store.list_open_priorities().unwrap_or_default();
-            let carried = open.len() as i64;
+            let carried = store.carry_over_open(fromsh, tosh, Some(dd)).unwrap_or(0);
             let h = crate::domain::Handover {
                 id: uuid::Uuid::new_v4().to_string(),
                 from_shift: fromsh,

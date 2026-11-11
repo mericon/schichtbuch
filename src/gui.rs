@@ -234,7 +234,7 @@ impl SchichtbuchApp {
         let from = Shift::from_str(&self.ho_from);
         let to = Shift::from_str(&self.ho_to);
         let archived = store.archive_completed(Some(date), Some(from)).unwrap_or(0);
-        let carried = store.list_open_priorities().unwrap_or_default().len() as i64;
+        let carried = store.carry_over_open(from, to, Some(date)).unwrap_or(0);
         let h = crate::domain::Handover {
             id: uuid::Uuid::new_v4().to_string(),
             from_shift: from,
