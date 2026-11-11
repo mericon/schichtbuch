@@ -41,6 +41,7 @@ struct SchichtbuchApp {
     db_path_str: String,
     current_user: String,
     dark_mode: bool,
+    last_applied_dark: Option<bool>,
     stamm_unlocked: bool,
     stamm_password_input: String,
     stamm_new_password: String,
@@ -112,6 +113,7 @@ impl SchichtbuchApp {
             db_path_str: db.to_string_lossy().to_string(),
             current_user: String::new(),
             dark_mode: true,
+            last_applied_dark: None,
             stamm_unlocked: false,
             stamm_password_input: String::new(),
             stamm_new_password: String::new(),
@@ -303,7 +305,10 @@ impl SchichtbuchApp {
 
 impl eframe::App for SchichtbuchApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        if self.dark_mode { ui.ctx().set_visuals(egui::Visuals::dark()); } else { ui.ctx().set_visuals(egui::Visuals::light()); }
+        if self.last_applied_dark != Some(self.dark_mode) {
+            if self.dark_mode { ui.ctx().set_visuals(egui::Visuals::dark()); } else { ui.ctx().set_visuals(egui::Visuals::light()); }
+            self.last_applied_dark = Some(self.dark_mode);
+        }
         egui::Panel::top("top").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
