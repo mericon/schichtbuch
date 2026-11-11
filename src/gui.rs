@@ -314,30 +314,46 @@ impl eframe::App for SchichtbuchApp {
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
                 egui::Window::new("Meldungs-Details").resizable(true).default_width(420.0).open(&mut open).show(&ctx, |ui| {
                     if let Some(e) = &entry {
-                        egui::Grid::new("detail_grid").show(ui, |ui| {
-                            ui.label("Datum:"); ui.label(e.date.to_string()); ui.end_row();
-                            ui.label("Schicht:"); ui.label(e.shift.as_str()); ui.end_row();
-                            ui.label("Letzte Schicht:"); ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); ui.end_row();
-                            ui.label("Letzter Bearbeiter:"); ui.label(&e.last_editor); ui.end_row();
-                            ui.label("Status:"); ui.label(e.status.as_str()); ui.end_row();
-                            ui.label("Priorität:"); ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); ui.end_row();
-                            ui.label("Anlage:"); ui.label(&e.plant); ui.end_row();
-                            ui.label("SAP-Auftrag:"); ui.label(&e.sap_order); ui.end_row();
-                            ui.label("Störmeldung:"); ui.label(&e.fault); ui.end_row();
-                            ui.label("Verantwortlich:"); ui.label(&e.responsible); ui.end_row();
-                            ui.label("An wen übergeben?"); ui.label(&e.handed_over_to); ui.end_row();
-                            ui.label("Ausfallzeit:"); ui.label(&e.downtime); ui.end_row();
-                            ui.label("Maßnahme:"); ui.label(&e.action); ui.end_row();
-                            ui.label("Bilder:");
-                            ui.vertical(|ui| {
-                                for img in e.images.split(';').filter(|s| !s.is_empty()) {
-                                    let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.to_string());
-                                    if ui.link(&name).clicked() { let _ = opener::open(img); }
+                        TableBuilder::new(ui)
+                            .resizable(true)
+                            .column(Column::initial(130.0).resizable(true))
+                            .column(Column::remainder().resizable(true))
+                            .body(|mut body| {
+                                let e = entry.as_ref().unwrap();
+                                let rows: Vec<(&str, String)> = vec![
+                                    ("Datum:", e.date.to_string()),
+                                    ("Schicht:", e.shift.as_str().to_string()),
+                                    ("Letzte Schicht:", e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()),
+                                    ("Letzter Bearbeiter:", e.last_editor.clone()),
+                                    ("Status:", e.status.as_str().to_string()),
+                                    ("Priorität:", e.priority.map(|p| p.to_string()).unwrap_or_default()),
+                                    ("Anlage:", e.plant.clone()),
+                                    ("SAP-Auftrag:", e.sap_order.clone()),
+                                    ("Störmeldung:", e.fault.clone()),
+                                    ("Verantwortlich:", e.responsible.clone()),
+                                    ("An wen übergeben?", e.handed_over_to.clone()),
+                                    ("Ausfallzeit:", e.downtime.clone()),
+                                    ("Maßnahme:", e.action.clone()),
+                                ];
+                                for (k, v) in rows {
+                                    body.row(16.0, |mut row| {
+                                        row.col(|ui| { ui.strong(k); });
+                                        row.col(|ui| { ui.label(v); });
+                                    });
                                 }
-                                if e.images.is_empty() { ui.label("(keine)"); }
+                                body.row(16.0, |mut row| {
+                                    row.col(|ui| { ui.strong("Bilder:"); });
+                                    row.col(|ui| {
+                                        ui.vertical(|ui| {
+                                            for img in e.images.split(';').filter(|s| !s.is_empty()) {
+                                                let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.to_string());
+                                                if ui.link(&name).clicked() { let _ = opener::open(img); }
+                                            }
+                                            if e.images.is_empty() { ui.label("(keine)"); }
+                                        });
+                                    });
+                                });
                             });
-                            ui.end_row();
-                        });
                     } else {
                         ui.label("Eintrag nicht gefunden");
                     }
