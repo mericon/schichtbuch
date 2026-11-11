@@ -11,7 +11,21 @@ pub fn run(db: PathBuf) {
     let _ = eframe::run_native(
         "Schichtbuch",
         options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
+            // Modern dark theme
+            cc.egui_ctx.global_style_mut(|style| {
+                style.visuals = egui::Visuals::dark();
+                style.visuals.window_corner_radius = egui::CornerRadius::same(12);
+                style.visuals.menu_corner_radius = egui::CornerRadius::same(8);
+                style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::same(6);
+                style.visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
+                style.visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
+                style.visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
+                
+                style.spacing.item_spacing = egui::vec2(8.0, 6.0);
+                style.spacing.button_padding = egui::vec2(10.0, 5.0);
+                style.spacing.window_margin = egui::Margin::same(12);
+            });
             let mut app = SchichtbuchApp::new(db.clone());
             app.reload();
             Ok(Box::new(app))
