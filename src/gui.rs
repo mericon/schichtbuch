@@ -367,9 +367,11 @@ impl eframe::App for SchichtbuchApp {
                     ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.new_action); });
                     ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.new_images);
                         if ui.button("Anhängen").clicked() {
-                            if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
-                                if !self.new_images.is_empty() { self.new_images.push(';'); }
-                                self.new_images.push_str(&path.to_string_lossy());
+                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                                for path in paths {
+                                    if !self.new_images.is_empty() { self.new_images.push(';'); }
+                                    self.new_images.push_str(&path.to_string_lossy());
+                                }
                             }
                         }
                     });
@@ -406,9 +408,11 @@ impl eframe::App for SchichtbuchApp {
                     ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.edit_action); });
                     ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.edit_images);
                         if ui.button("Anhängen").clicked() {
-                            if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
-                                if !self.edit_images.is_empty() { self.edit_images.push(';'); }
-                                self.edit_images.push_str(&path.to_string_lossy());
+                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                                for path in paths {
+                                    if !self.edit_images.is_empty() { self.edit_images.push(';'); }
+                                    self.edit_images.push_str(&path.to_string_lossy());
+                                }
                             }
                         }
                     });
