@@ -487,34 +487,33 @@ impl eframe::App for SchichtbuchApp {
                         }); ui.end_row();
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Maßnahme:"); 
-                        let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
-                        ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4)); ui.end_row();
-                        ui.label("Bilder:");
-                        let mut to_remove: Option<usize> = None;
-                        let imgs: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
-                        for (i, img) in imgs.iter().enumerate() {
-                            ui.horizontal(|ui| {
-                                let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
-                                if ui.link(&name).clicked() { let _ = opener::open(img); }
-                                if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
-                            });
-                        }
-                        if let Some(i) = to_remove {
-                            let mut v: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
-                            if i < v.len() { v.remove(i); }
-                            self.new_images = v.join(";");
-                        }
-                        if ui.button("Bilder anhängen").clicked() {
-                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
-                                for path in paths {
-                                    if !self.new_images.is_empty() { self.new_images.push(';'); }
-                                    self.new_images.push_str(&path.to_string_lossy());
-                                }
+                    });
+                    ui.label("Maßnahme:");
+                    let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
+                    ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4));
+                    ui.label("Bilder:");
+                    let mut to_remove: Option<usize> = None;
+                    let imgs: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                    for (i, img) in imgs.iter().enumerate() {
+                        ui.horizontal(|ui| {
+                            let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
+                            if ui.link(&name).clicked() { let _ = opener::open(img); }
+                            if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
+                        });
+                    }
+                    if let Some(i) = to_remove {
+                        let mut v: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                        if i < v.len() { v.remove(i); }
+                        self.new_images = v.join(";");
+                    }
+                    if ui.button("Bilder anhängen").clicked() {
+                        if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                            for path in paths {
+                                if !self.new_images.is_empty() { self.new_images.push(';'); }
+                                self.new_images.push_str(&path.to_string_lossy());
                             }
                         }
-                        ui.end_row();
-                    });
+                    }
                     ui.horizontal(|ui| {
                         if ui.button("Hinzufügen").clicked() { self.add_entry(); self.show_new_window = false; }
                         if ui.button("Abbrechen").clicked() { self.show_new_window = false; }
