@@ -291,7 +291,7 @@ impl eframe::App for SchichtbuchApp {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
                 ui.label("DB:");
-                ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(260.0));
                 if ui.button("Durchsuchen").clicked() {
                     if let Some(path) = rfd::FileDialog::new()
                         .add_filter("Datenbank", &["db", "sqlite", "sqlite3"])
@@ -403,24 +403,24 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 egui::Window::new("Neuer Eintrag").resizable(true).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
-                        ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(260.0)); ui.end_row();
+                        ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(260.0)); ui.end_row();
                         ui.label("Anlage:"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
                             for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
                         }); ui.end_row();
                         ui.label("Status:"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
                             for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
                         }); ui.end_row();
-                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.new_fault).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(260.0)); ui.end_row();
+                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.new_fault).desired_width(260.0)); ui.end_row();
                         ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("new_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
                             for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
                         }); ui.end_row();
-                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Maßnahme:"); ui.add(egui::TextEdit::singleline(&mut self.new_action).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(260.0)); ui.end_row();
+                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(260.0)); ui.end_row();
+                        ui.label("Maßnahme:"); ui.add(egui::TextEdit::singleline(&mut self.new_action).desired_width(260.0)); ui.end_row();
                         ui.label("Bilder:"); ui.horizontal(|ui| {
-                            ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(f32::INFINITY));
+                            ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(260.0));
                             if ui.button("Anhängen").clicked() {
                                 if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
                                     for path in paths {
@@ -457,15 +457,15 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
                             for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
                         }); ui.end_row();
-                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.edit_sap).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.edit_fault).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_downtime).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("An wen übergeben?:"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(f32::INFINITY)); ui.end_row();
-                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.edit_sap).desired_width(260.0)); ui.end_row();
+                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.edit_fault).desired_width(260.0)); ui.end_row();
+                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_downtime).desired_width(260.0)); ui.end_row();
+                        ui.label("An wen übergeben?:"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(260.0)); ui.end_row();
+                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(260.0)); ui.end_row();
                     });
                     ui.label("Maßnahme");
                     egui::ScrollArea::vertical().max_height(15.0 * 14.0).auto_shrink([false, false]).show(ui, |ui| {
-                        ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                        ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(260.0));
                     });
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
@@ -620,7 +620,7 @@ impl SchichtbuchApp {
 
     fn ui_archiv(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(f32::INFINITY));
+            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(260.0));
             ui.label("Anlage:");
             egui::ComboBox::from_id_salt("arch_plant").selected_text(if self.archive_filter_plant.is_empty() {"(alle)"} else {&self.archive_filter_plant}).show_ui(ui, |ui| {
                 if ui.selectable_value(&mut self.archive_filter_plant, String::new(), "(alle)").clicked() {}
@@ -658,7 +658,7 @@ impl SchichtbuchApp {
 
     fn ui_shift_view(&mut self, ui: &mut egui::Ui, shift: &str) {
         ui.horizontal(|ui| {
-            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.sicht_date).desired_width(f32::INFINITY));
+            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.sicht_date).desired_width(260.0));
             if ui.button("Laden").clicked() { self.reload(); }
         });
         ui.separator();
@@ -702,7 +702,7 @@ impl SchichtbuchApp {
             ui.label("Stammdaten sind passwortgeschützt.");
             ui.horizontal(|ui| {
                 ui.label("Passwort:");
-                ui.add(egui::TextEdit::singleline(&mut self.stamm_password_input).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.stamm_password_input).desired_width(260.0));
                 if ui.button("Entsperren").clicked() {
                     let stored = self.store.as_ref().map(|st| st.get_setting("stammdaten_password").unwrap_or_default()).unwrap_or_default();
                     let stored = if stored.is_empty() { "0000".to_string() } else { stored };
@@ -724,7 +724,7 @@ impl SchichtbuchApp {
         if self.stamm_change_pw {
             ui.horizontal(|ui| {
                 ui.label("Neues Passwort:");
-                ui.add(egui::TextEdit::singleline(&mut self.stamm_new_password).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.stamm_new_password).desired_width(260.0));
                 if ui.button("Speichern").clicked() && !self.stamm_new_password.is_empty() {
                     if let Some(store) = self.store.as_ref() {
                         let _ = store.set_setting("stammdaten_password", &self.stamm_new_password);
@@ -747,7 +747,7 @@ impl SchichtbuchApp {
         });
         ui.horizontal(|ui| {
             ui.label("Neu:");
-            ui.add(egui::TextEdit::singleline(&mut self.new_plant_name).desired_width(f32::INFINITY));
+            ui.add(egui::TextEdit::singleline(&mut self.new_plant_name).desired_width(260.0));
             if ui.button("Hinzufügen").clicked() && !self.new_plant_name.trim().is_empty() {
                 if let Some(store) = self.store.as_mut() {
                     let _ = store.add_plant(self.new_plant_name.trim());
@@ -760,7 +760,7 @@ impl SchichtbuchApp {
         if let Some(sel) = self.selected_plant.clone() {
             ui.horizontal(|ui| {
                 ui.label("Umbenennen:");
-                ui.add(egui::TextEdit::singleline(&mut self.rename_plant_name).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.rename_plant_name).desired_width(260.0));
                 if ui.button("Speichern").clicked() && !self.rename_plant_name.trim().is_empty() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.rename_plant(&sel, self.rename_plant_name.trim());
@@ -791,7 +791,7 @@ impl SchichtbuchApp {
         });
         ui.horizontal(|ui| {
             ui.label("Neu:");
-            ui.add(egui::TextEdit::singleline(&mut self.new_resp_name).desired_width(f32::INFINITY));
+            ui.add(egui::TextEdit::singleline(&mut self.new_resp_name).desired_width(260.0));
             if ui.button("Hinzufügen").clicked() && !self.new_resp_name.trim().is_empty() {
                 if let Some(store) = self.store.as_mut() {
                     let _ = store.add_responsible(self.new_resp_name.trim());
@@ -804,7 +804,7 @@ impl SchichtbuchApp {
         if let Some(sel) = self.selected_resp.clone() {
             ui.horizontal(|ui| {
                 ui.label("Umbenennen:");
-                ui.add(egui::TextEdit::singleline(&mut self.rename_resp_name).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.rename_resp_name).desired_width(260.0));
                 if ui.button("Speichern").clicked() && !self.rename_resp_name.trim().is_empty() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.rename_responsible(&sel, self.rename_resp_name.trim());
@@ -827,10 +827,10 @@ impl SchichtbuchApp {
 
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
         egui::Grid::new("ho_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
-            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.ho_date).desired_width(f32::INFINITY)); ui.end_row();
-            ui.label("Von Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_from).desired_width(f32::INFINITY)); ui.end_row();
-            ui.label("Nach Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_to).desired_width(f32::INFINITY)); ui.end_row();
-            ui.label("Benutzer:"); ui.add(egui::TextEdit::singleline(&mut self.ho_user).desired_width(f32::INFINITY)); ui.end_row();
+            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.ho_date).desired_width(260.0)); ui.end_row();
+            ui.label("Von Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_from).desired_width(260.0)); ui.end_row();
+            ui.label("Nach Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_to).desired_width(260.0)); ui.end_row();
+            ui.label("Benutzer:"); ui.add(egui::TextEdit::singleline(&mut self.ho_user).desired_width(260.0)); ui.end_row();
         });
         if ui.button("Schichtübergabe durchführen").clicked() {
             self.do_handover();
