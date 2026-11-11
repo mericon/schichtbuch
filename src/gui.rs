@@ -65,6 +65,7 @@ struct SchichtbuchApp {
     rename_resp_name: String,
     // new entry form
     new_date: String,
+    new_time: String,
     new_shift: String,
     new_plant: String,
     new_status: String,
@@ -78,9 +79,12 @@ struct SchichtbuchApp {
     // edit
     selected_id: Option<String>,
     detail_id: Option<String>,
+    sort_column: String,
+    sort_asc: bool,
     show_new_window: bool,
     show_edit_window: bool,
     edit_status: String,
+    edit_time: String,
     edit_shift: String,
     edit_plant: String,
     edit_responsible: String,
@@ -131,6 +135,7 @@ impl SchichtbuchApp {
             new_resp_name: String::new(),
             rename_resp_name: String::new(),
             new_date: today.clone(),
+            new_time: chrono::Local::now().format("%H:%M").to_string(),
             new_shift: "Früh".into(),
             new_plant: String::new(),
             new_status: "offen".into(),
@@ -143,9 +148,12 @@ impl SchichtbuchApp {
             new_images: String::new(),
             selected_id: None,
             detail_id: None,
+            sort_column: String::new(),
+            sort_asc: true,
             show_new_window: false,
             show_edit_window: false,
             edit_status: String::new(),
+            edit_time: String::new(),
             edit_shift: String::new(),
             edit_plant: String::new(),
             edit_responsible: String::new(),
@@ -182,6 +190,12 @@ impl SchichtbuchApp {
         if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
         if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
+            // sort
+            match self.sort_column.as_str() {
+                "time" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.current_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
+                "status" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.status.as_str().cmp(b.status.as_str())); } else { self.current_entries.sort_by(|a,b| b.status.as_str().cmp(a.status.as_str())); } }
+                _ => {}
+            }
             self.status_msg = format!("{} Einträge (aktuelle Schicht) | DB: {}", self.current_entries.len(), self.db_path.display());
         } else {
             self.status_msg = format!("Ungültiges Datum: {}", self.filter_date);
@@ -201,6 +215,7 @@ impl SchichtbuchApp {
     fn load_edit(&mut self, e: &Entry) {
         self.selected_id = Some(e.id.clone());
         self.edit_status = e.status.as_str().to_string();
+        self.edit_time = e.time.clone();
         self.edit_shift = e.shift.as_str().to_string();
         self.edit_plant = e.plant.clone();
         self.edit_responsible = e.responsible.clone();
@@ -219,6 +234,7 @@ impl SchichtbuchApp {
         if let Some(e0) = store.get_entry(&id).unwrap_or(None) { if e0.frozen { self.status_msg = "Eintrag ist eingefroren und kann nicht bearbeitet werden".into(); return; } }
         if let Some(mut e) = store.get_entry(&id).unwrap_or(None) {
             e.status = Status::from_str(&self.edit_status);
+            e.time = self.edit_time.clone();
             e.shift = Shift::from_str(&self.edit_shift);
             e.last_shift = Some(Shift::from_str(&self.filter_shift));
             e.last_editor = self.current_user.clone();
@@ -245,6 +261,7 @@ impl SchichtbuchApp {
         let mut e = Entry::new(date, Shift::from_str(&self.new_shift));
         e.plant = self.new_plant.clone();
         e.status = Status::from_str(&self.new_status);
+        if self.new_time.trim().is_empty() { e.time = chrono::Local::now().format("%H:%M").to_string(); } else { e.time = self.new_time.clone(); }
         e.last_shift = Some(Shift::from_str(&self.new_shift));
         e.last_editor = self.current_user.clone();
         e.sap_order = self.new_sap.clone();
@@ -352,6 +369,7 @@ impl eframe::App for SchichtbuchApp {
                                 let e = entry.as_ref().unwrap();
                                 let rows: Vec<(&str, String)> = vec![
                                     ("Datum:", e.date.to_string()),
+                                    ("Uhrzeit:", e.time.clone()),
                                     ("Schicht:", e.shift.as_str().to_string()),
                                     ("Letzte Schicht:", e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()),
                                     ("Letzter Bearbeiter:", e.last_editor.clone()),
@@ -442,6 +460,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                             for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
                         }); ui.end_row();
+                        ui.label("Uhrzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_time).desired_width(260.0)); ui.end_row();
                         ui.label("Schicht:"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
                             for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
                         }); ui.end_row();
@@ -520,6 +539,7 @@ impl SchichtbuchApp {
             .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::initial(80.0).resizable(true))
+            .column(Column::initial(60.0).resizable(true))
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(130.0).resizable(true))
             .column(Column::initial(80.0).resizable(true))
@@ -528,11 +548,12 @@ impl SchichtbuchApp {
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(120.0).resizable(true))
             .column(Column::initial(160.0).resizable(true))
-            .column(Column::initial(160.0).resizable(true))
+            .column(Column::remainder().resizable(true))
             .column(Column::initial(60.0).resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
-                header.col(|ui| { ui.strong("Status"); });
+                header.col(|ui| { if ui.link("Uhrzeit").clicked() { if self.sort_column=="time" { self.sort_asc = !self.sort_asc; } else { self.sort_column="time".into(); self.sort_asc=true; } self.reload(); } });
+                header.col(|ui| { if ui.link("Status").clicked() { if self.sort_column=="status" { self.sort_asc = !self.sort_asc; } else { self.sort_column="status".into(); self.sort_asc=true; } self.reload(); } });
                 header.col(|ui| { ui.strong("Anlage"); });
                 header.col(|ui| { ui.strong("SAP"); });
                 header.col(|ui| { ui.strong("Prio"); });
@@ -547,6 +568,7 @@ impl SchichtbuchApp {
                 for e in self.current_entries.clone() {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
+                        row.col(|ui| { ui.label(&e.time); });
                         row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| {

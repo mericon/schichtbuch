@@ -77,6 +77,7 @@ impl Status {
 pub struct Entry {
     pub id: String,
     pub date: NaiveDate,
+    pub time: String,
     pub shift: Shift,
     pub last_shift: Option<Shift>,
     pub last_editor: String,
@@ -104,6 +105,7 @@ impl Entry {
         Self {
             id: Uuid::new_v4().to_string(),
             date,
+            time: chrono::Local::now().format("%H:%M").to_string(),
             shift,
             last_shift: None,
             last_editor: String::new(),
