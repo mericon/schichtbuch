@@ -74,19 +74,21 @@ impl Store {
         // migration: add last_shift column if missing
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN last_shift TEXT", []);
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN last_editor TEXT", []);
+        let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN frozen INTEGER DEFAULT 0", []);
         Ok(())
     }
 
     pub fn insert_entry(&self, e: &Entry) -> Result<()> {
         self.conn.execute(
-            r#"INSERT INTO entries (id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by)
-               VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)"#,
+            r#"INSERT INTO entries (id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by)
+               VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)"#,
             params![
                 e.id,
                 e.date.to_string(),
                 e.shift.as_str(),
                 e.last_shift.map(|s| s.as_str().to_string()),
                 e.last_editor.clone(),
+                e.frozen as i32,
                 e.status.as_str(),
                 e.priority,
                 e.plant,
@@ -109,7 +111,7 @@ impl Store {
 
     pub fn update_entry(&self, e: &Entry) -> Result<()> {
         self.conn.execute(
-            r#"UPDATE entries SET date=?2,shift=?3,last_shift=?4,last_editor=?5,status=?6,priority=?7,plant=?8,sap_order=?9,fault=?10,responsible=?11,handed_over_to=?12,downtime=?13,action=?14,images=?15,transferred=?16,archived=?17,updated_at=?18,created_by=?19
+            r#"UPDATE entries SET date=?2,shift=?3,last_shift=?4,last_editor=?5,frozen=?6,status=?7,priority=?8,plant=?9,sap_order=?10,fault=?11,responsible=?12,handed_over_to=?13,downtime=?14,action=?15,images=?16,transferred=?17,archived=?18,updated_at=?19,created_by=?20
                WHERE id=?1"#,
             params![
                 e.id,
@@ -117,6 +119,7 @@ impl Store {
                 e.shift.as_str(),
                 e.last_shift.map(|s| s.as_str().to_string()),
                 e.last_editor.clone(),
+                e.frozen as i32,
                 e.status.as_str(),
                 e.priority,
                 e.plant,
@@ -143,7 +146,7 @@ impl Store {
 
     pub fn get_entry(&self, id: &str) -> Result<Option<Entry>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE id=?1"
+            "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE id=?1"
         )?;
         let mut rows = stmt.query(params![id])?;
         if let Some(r) = rows.next()? {
@@ -155,7 +158,7 @@ impl Store {
 
     pub fn list_entries(&self, archived: bool) -> Result<Vec<Entry>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=?1 ORDER BY date DESC, priority ASC NULLS LAST, created_at DESC"
+            "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=?1 ORDER BY date DESC, priority ASC NULLS LAST, created_at DESC"
         )?;
         let rows = stmt.query_map(params![archived as i32], |r| row_to_entry(r))?;
         let mut out = Vec::new();
@@ -165,7 +168,7 @@ impl Store {
 
     pub fn list_current_shift(&self, date: NaiveDate, shift: Shift) -> Result<Vec<Entry>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=0 AND date=?1 AND shift=?2 ORDER BY priority ASC NULLS LAST, created_at ASC"
+            "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=0 AND date=?1 AND shift=?2 ORDER BY priority ASC NULLS LAST, created_at ASC"
         )?;
         let rows = stmt.query_map(params![date.to_string(), shift.as_str()], |r| row_to_entry(r))?;
         let mut out = Vec::new();
@@ -175,7 +178,7 @@ impl Store {
 
     pub fn list_open_priorities(&self) -> Result<Vec<Entry>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=0 AND status<>'erledigt' ORDER BY priority ASC NULLS LAST, date ASC, created_at ASC"
+            "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=0 AND frozen=0 AND status<>'erledigt' ORDER BY priority ASC NULLS LAST, date ASC, created_at ASC"
         )?;
         let rows = stmt.query_map([], |r| row_to_entry(r))?;
         let mut out = Vec::new();
@@ -207,25 +210,49 @@ impl Store {
     }
 
     /// Carry over open (not done) entries from one shift to another (Übernahme).
+    /// The original entries in `from` are frozen (kept, read-only) and copies are
+    /// created in `to` (active). Frozen originals remain until overwritten by a
+    /// later takeover.
     pub fn carry_over_open(&self, from: Shift, to: Shift, date: Option<NaiveDate>) -> Result<i64> {
-        let mut sql = "UPDATE entries SET shift=?1, last_shift=?2, updated_at=?3 WHERE archived=0 AND status<>'erledigt' AND shift=?4".to_string();
+        // select open entries in from shift
+        let mut sql = "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=0 AND frozen=0 AND status<>'erledigt' AND shift=?1".to_string();
         let mut args: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-        args.push(Box::new(to.as_str().to_string()));
-        args.push(Box::new(from.as_str().to_string()));
-        args.push(Box::new(chrono::Local::now().naive_local().to_string()));
         args.push(Box::new(from.as_str().to_string()));
         if let Some(d) = date {
-            sql.push_str(" AND date=?5");
+            sql.push_str(" AND date=?2");
             args.push(Box::new(d.to_string()));
         }
-        let n = self.conn.execute(&sql, rusqlite::params_from_iter(args.iter().map(|b| b.as_ref())))?;
-        Ok(n as i64)
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(args.iter().map(|b| b.as_ref())), |r| row_to_entry(r))?;
+        let mut entries: Vec<crate::domain::Entry> = Vec::new();
+        for e in rows { entries.push(e?); }
+        drop(stmt);
+
+        let now = chrono::Local::now().naive_local();
+        let mut carried = 0i64;
+        for e in &entries {
+            // freeze original
+            self.conn.execute("UPDATE entries SET frozen=1, updated_at=?1 WHERE id=?2", rusqlite::params![now.to_string(), e.id])?;
+            // create copy in target shift
+            let mut copy = e.clone();
+            copy.id = uuid::Uuid::new_v4().to_string();
+            copy.shift = to;
+            copy.frozen = false;
+            copy.last_shift = Some(from);
+            copy.last_editor = e.last_editor.clone();
+            copy.created_at = now;
+            copy.updated_at = now;
+            // insert
+            self.insert_entry(&copy)?;
+            carried += 1;
+        }
+        Ok(carried)
     }
 
     pub fn search_archive(&self, query: &str) -> Result<Vec<Entry>> {
         let like = format!("%{}%", query);
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=1 AND (plant LIKE ?1 OR fault LIKE ?1 OR action LIKE ?1 OR sap_order LIKE ?1 OR responsible LIKE ?1) ORDER BY date DESC, created_at DESC"
+            "SELECT id,date,shift,last_shift,last_editor,frozen,status,priority,plant,sap_order,fault,responsible,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by FROM entries WHERE archived=1 AND (plant LIKE ?1 OR fault LIKE ?1 OR action LIKE ?1 OR sap_order LIKE ?1 OR responsible LIKE ?1) ORDER BY date DESC, created_at DESC"
         )?;
         let rows = stmt.query_map(params![like], |r| row_to_entry(r))?;
         let mut out = Vec::new();
@@ -312,28 +339,30 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
     let date_str: String = r.get(1)?;
     let last_shift: Option<String> = r.get(3)?;
     let last_editor: String = r.get(4)?;
-    let created: String = r.get(17)?;
-    let updated: String = r.get(18)?;
+    let frozen: i32 = r.get(5)?;
+    let created: String = r.get(18)?;
+    let updated: String = r.get(19)?;
     Ok(Entry {
         id: r.get(0)?,
         date: date_str.parse().unwrap_or_else(|_| chrono::Local::now().date_naive()),
         shift: Shift::from_str(&r.get::<_,String>(2)?),
         last_shift: last_shift.map(|s| Shift::from_str(&s)),
         last_editor,
-        status: Status::from_str(&r.get::<_,String>(5)?),
-        priority: r.get(6)?,
-        plant: r.get(7)?,
-        sap_order: r.get(8)?,
-        fault: r.get(9)?,
-        responsible: r.get(10)?,
-        handed_over_to: r.get(11)?,
-        downtime: r.get(12)?,
-        action: r.get(13)?,
-        images: r.get(14)?,
-        transferred: r.get::<_,i32>(15)? != 0,
-        archived: r.get::<_,i32>(16)? != 0,
+        frozen: frozen != 0,
+        status: Status::from_str(&r.get::<_,String>(6)?),
+        priority: r.get(7)?,
+        plant: r.get(8)?,
+        sap_order: r.get(9)?,
+        fault: r.get(10)?,
+        responsible: r.get(11)?,
+        handed_over_to: r.get(12)?,
+        downtime: r.get(13)?,
+        action: r.get(14)?,
+        images: r.get(15)?,
+        transferred: r.get::<_,i32>(16)? != 0,
+        archived: r.get::<_,i32>(17)? != 0,
         created_at: created.parse().unwrap_or_else(|_| chrono::Local::now().naive_local()),
         updated_at: updated.parse().unwrap_or_else(|_| chrono::Local::now().naive_local()),
-        created_by: r.get(19)?,
+        created_by: r.get(20)?,
     })
 }

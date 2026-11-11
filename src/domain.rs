@@ -32,6 +32,7 @@ impl Shift {
 pub enum Status {
     Offen,
     StehtOffen,
+    Geplant,
     InBearbeitung,
     StehtInBearbeitung,
     Erledigt,
@@ -42,6 +43,7 @@ impl Status {
         match self {
             Status::Offen => "offen",
             Status::StehtOffen => "steht offen",
+            Status::Geplant => "geplant",
             Status::InBearbeitung => "In Bearbeitung",
             Status::StehtInBearbeitung => "steht in Bearbeitung",
             Status::Erledigt => "erledigt",
@@ -51,6 +53,7 @@ impl Status {
         let l = s.to_lowercase();
         if l.contains("erledigt") { Status::Erledigt }
         else if l.contains("steht") && l.contains("offen") { Status::StehtOffen }
+        else if l.contains("geplant") { Status::Geplant }
         else if l.contains("steht") { Status::StehtInBearbeitung }
         else if l.contains("bearbeitung") { Status::InBearbeitung }
         else if l.contains("offen") { Status::Offen }
@@ -62,6 +65,7 @@ impl Status {
         match self {
             Status::Offen => (255, 165, 0),
             Status::StehtOffen => (220, 20, 60),
+            Status::Geplant => (186, 85, 211),
             Status::InBearbeitung => (255, 215, 0),
             Status::StehtInBearbeitung => (220, 20, 60),
             Status::Erledigt => (34, 139, 34),
@@ -76,6 +80,7 @@ pub struct Entry {
     pub shift: Shift,
     pub last_shift: Option<Shift>,
     pub last_editor: String,
+    pub frozen: bool,
     pub status: Status,
     pub priority: Option<i32>,
     pub plant: String,
@@ -102,6 +107,7 @@ impl Entry {
             shift,
             last_shift: None,
             last_editor: String::new(),
+            frozen: false,
             status: Status::Offen,
             priority: None,
             plant: String::new(),

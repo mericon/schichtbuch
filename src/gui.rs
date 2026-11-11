@@ -185,6 +185,7 @@ impl SchichtbuchApp {
     fn save_edit(&mut self) {
         let Some(store) = self.store.as_mut() else { return; };
         let Some(id) = self.selected_id.clone() else { return; };
+        if let Some(e0) = store.get_entry(&id).unwrap_or(None) { if e0.frozen { self.status_msg = "Eintrag ist eingefroren und kann nicht bearbeitet werden".into(); return; } }
         if let Some(mut e) = store.get_entry(&id).unwrap_or(None) {
             e.status = Status::from_str(&self.edit_status);
             e.shift = Shift::from_str(&self.edit_shift);
@@ -373,7 +374,7 @@ impl eframe::App for SchichtbuchApp {
                         for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
                     }); });
                     ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
-                        for s in ["offen","steht offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
+                        for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
                     }); });
                     ui.horizontal(|ui| { ui.label("SAP"); ui.text_edit_singleline(&mut self.new_sap); });
                     ui.horizontal(|ui| { ui.label("Störmeldung"); ui.text_edit_singleline(&mut self.new_fault); });
@@ -407,7 +408,7 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 egui::Window::new("Eintrag bearbeiten").resizable(true).scroll([true, true]).default_width(460.0).open(&mut open).show(&ctx, |ui| {
                     ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
-                        for s in ["offen","steht offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
+                        for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
                     }); });
                     ui.horizontal(|ui| { ui.label("Schicht"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
                         for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
@@ -509,7 +510,7 @@ impl SchichtbuchApp {
                 for e in self.current_entries.clone() {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), e.status.as_str()); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| {
                             if !e.sap_order.is_empty() && ui.small_button(&e.sap_order).clicked() {
@@ -569,7 +570,7 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), e.status.as_str()); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
                 }
@@ -606,7 +607,7 @@ impl SchichtbuchApp {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), e.status.as_str()); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.sap_order); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
@@ -643,7 +644,7 @@ impl SchichtbuchApp {
                 .body(|mut body| {
                     for e in entries {
                         body.row(16.0, |mut row| {
-                            row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), e.status.as_str()); });
+                            row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
                             row.col(|ui| { ui.label(&e.plant); });
                             row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                             row.col(|ui| { ui.label(&e.fault); });
