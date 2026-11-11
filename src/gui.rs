@@ -58,6 +58,8 @@ struct SchichtbuchApp {
     // edit
     selected_id: Option<String>,
     detail_id: Option<String>,
+    show_new_window: bool,
+    show_edit_window: bool,
     edit_status: String,
     edit_shift: String,
     edit_plant: String,
@@ -116,6 +118,8 @@ impl SchichtbuchApp {
             new_images: String::new(),
             selected_id: None,
             detail_id: None,
+            show_new_window: false,
+            show_edit_window: false,
             edit_status: String::new(),
             edit_shift: String::new(),
             edit_plant: String::new(),
@@ -143,8 +147,12 @@ impl SchichtbuchApp {
             self.current_user = self.responsible[0].clone();
         }
         self.prio_entries = store.list_open_priorities().unwrap_or_default();
+        if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
         if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
+            self.status_msg = format!("{} Einträge (aktuelle Schicht) | DB: {}", self.current_entries.len(), self.db_path.display());
+        } else {
+            self.status_msg = format!("Ungültiges Datum: {}", self.filter_date);
         }
         // archive: apply filter
         let mut res = if self.archive_query.trim().is_empty() {
@@ -214,7 +222,7 @@ impl SchichtbuchApp {
         e.downtime = self.new_downtime.clone();
         e.images = self.new_images.clone();
         match store.insert_entry(&e) {
-            Ok(_) => { self.status_msg = format!("added {}", e.id); self.reload(); }
+            Ok(_) => { self.status_msg = format!("added {}", e.id); self.filter_date = self.new_date.clone(); self.filter_shift = self.new_shift.clone(); self.reload(); }
             Err(err) => self.status_msg = format!("err: {}", err),
         }
     }
@@ -335,6 +343,82 @@ impl eframe::App for SchichtbuchApp {
                 });
                 if !open { self.detail_id = None; }
             }
+
+            // New entry window
+            if self.show_new_window {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                egui::Window::new("Neuer Eintrag").open(&mut open).show(&ctx, |ui| {
+                    ui.horizontal(|ui| { ui.label("Datum"); ui.text_edit_singleline(&mut self.new_date); });
+                    ui.horizontal(|ui| { ui.label("Schicht"); ui.text_edit_singleline(&mut self.new_shift); });
+                    ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
+                        for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
+                        for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("SAP"); ui.text_edit_singleline(&mut self.new_sap); });
+                    ui.horizontal(|ui| { ui.label("Störmeldung"); ui.text_edit_singleline(&mut self.new_fault); });
+                    ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("new_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
+                        for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.new_priority); });
+                    ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.text_edit_singleline(&mut self.new_downtime); });
+                    ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.new_action); });
+                    ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.new_images);
+                        if ui.button("Anhängen").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
+                                if !self.new_images.is_empty() { self.new_images.push(';'); }
+                                self.new_images.push_str(&path.to_string_lossy());
+                            }
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button("Hinzufügen").clicked() { self.add_entry(); self.show_new_window = false; }
+                        if ui.button("Abbrechen").clicked() { self.show_new_window = false; }
+                    });
+                });
+                if !open { self.show_new_window = false; }
+            }
+
+            // Edit window
+            if self.show_edit_window && self.selected_id.is_some() {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                egui::Window::new("Eintrag bearbeiten").open(&mut open).show(&ctx, |ui| {
+                    ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
+                        for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("Schicht"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
+                        for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("edit_plant").selected_text(if self.edit_plant.is_empty() {"(wählen)"} else {&self.edit_plant}).show_ui(ui, |ui| {
+                        for p in &self.plants.clone() { ui.selectable_value(&mut self.edit_plant, p.clone(), p); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
+                        for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
+                    }); });
+                    ui.horizontal(|ui| { ui.label("SAP"); ui.text_edit_singleline(&mut self.edit_sap); });
+                    ui.horizontal(|ui| { ui.label("Störmeldung"); ui.text_edit_singleline(&mut self.edit_fault); });
+                    ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.text_edit_singleline(&mut self.edit_downtime); });
+                    ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.text_edit_singleline(&mut self.edit_handed); });
+                    ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.edit_priority); });
+                    ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.edit_action); });
+                    ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.edit_images);
+                        if ui.button("Anhängen").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
+                                if !self.edit_images.is_empty() { self.edit_images.push(';'); }
+                                self.edit_images.push_str(&path.to_string_lossy());
+                            }
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button("Speichern").clicked() { self.save_edit(); self.show_edit_window = false; }
+                        if ui.button("Abbrechen").clicked() { self.show_edit_window = false; self.selected_id = None; }
+                    });
+                });
+                if !open { self.show_edit_window = false; self.selected_id = None; }
+            }
         });
     }
 }
@@ -347,33 +431,7 @@ impl SchichtbuchApp {
             if ui.button("Laden").clicked() { self.reload(); }
         });
         ui.separator();
-        ui.collapsing("Neuer Eintrag", |ui| {
-            ui.horizontal(|ui| { ui.label("Datum"); ui.text_edit_singleline(&mut self.new_date); });
-            ui.horizontal(|ui| { ui.label("Schicht"); ui.text_edit_singleline(&mut self.new_shift); });
-            ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
-                for p in &self.plants.clone() { if ui.selectable_value(&mut self.new_plant, p.clone(), p).clicked() {} }
-            }); });
-            ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
-                for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
-            }); });
-            ui.horizontal(|ui| { ui.label("SAP"); ui.text_edit_singleline(&mut self.new_sap); });
-            ui.horizontal(|ui| { ui.label("Störmeldung"); ui.text_edit_singleline(&mut self.new_fault); });
-            ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("new_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
-                for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
-            }); });
-            ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.new_priority); });
-            ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.text_edit_singleline(&mut self.new_downtime); });
-            ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.new_action); });
-            ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.new_images);
-                if ui.button("Anhängen").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
-                        if !self.new_images.is_empty() { self.new_images.push(';'); }
-                        self.new_images.push_str(&path.to_string_lossy());
-                    }
-                }
-            });
-            if ui.button("Hinzufügen").clicked() { self.add_entry(); }
-        });
+        if ui.button("Neuer Eintrag").clicked() { self.show_new_window = true; }
         ui.separator();
 
         // Table
@@ -383,6 +441,7 @@ impl SchichtbuchApp {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
+            .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::initial(80.0).resizable(true))
             .column(Column::initial(90.0).resizable(true))
@@ -394,7 +453,6 @@ impl SchichtbuchApp {
             .column(Column::initial(120.0).resizable(true))
             .column(Column::initial(160.0).resizable(true))
             .column(Column::initial(160.0).resizable(true))
-            .column(Column::initial(60.0).resizable(true))
             .column(Column::initial(60.0).resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
@@ -408,7 +466,6 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Störmeldung"); });
                 header.col(|ui| { ui.strong("Maßnahme"); });
                 header.col(|ui| { ui.strong("Bearb."); });
-                header.col(|ui| { ui.strong("Details"); });
             })
             .body(|mut body| {
                 for e in self.current_entries.clone() {
@@ -433,11 +490,10 @@ impl SchichtbuchApp {
                                 clicked_id = Some(e.id.clone());
                             }
                         });
-                        row.col(|ui| {
-                            if ui.small_button("Details").clicked() {
-                                detail_id = Some(e.id.clone());
-                            }
-                        });
+                        let resp = row.response();
+                        if resp.clicked() {
+                            detail_id = Some(e.id.clone());
+                        }
                     });
                 }
             });
@@ -446,44 +502,10 @@ impl SchichtbuchApp {
         if let Some(id) = clicked_id {
             if let Some(e) = self.current_entries.iter().find(|x| x.id == id).cloned() {
                 self.load_edit(&e);
+                self.show_edit_window = true;
             }
         }
 
-        // Edit form
-        if self.selected_id.is_some() {
-            ui.separator();
-            ui.label("Eintrag bearbeiten:");
-            ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
-                for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
-            }); });
-            ui.horizontal(|ui| { ui.label("Schicht"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
-                for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
-            }); });
-            ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("edit_plant").selected_text(if self.edit_plant.is_empty() {"(wählen)"} else {&self.edit_plant}).show_ui(ui, |ui| {
-                for p in &self.plants.clone() { ui.selectable_value(&mut self.edit_plant, p.clone(), p); }
-            }); });
-            ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
-                for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
-            }); });
-            ui.horizontal(|ui| { ui.label("SAP"); ui.text_edit_singleline(&mut self.edit_sap); });
-            ui.horizontal(|ui| { ui.label("Störmeldung"); ui.text_edit_singleline(&mut self.edit_fault); });
-            ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.text_edit_singleline(&mut self.edit_downtime); });
-            ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.text_edit_singleline(&mut self.edit_handed); });
-            ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.edit_priority); });
-            ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.edit_action); });
-            ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.edit_images); 
-                if ui.button("Anhängen").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_file() {
-                        if !self.edit_images.is_empty() { self.edit_images.push(';'); }
-                        self.edit_images.push_str(&path.to_string_lossy());
-                    }
-                }
-            });
-            ui.horizontal(|ui| {
-                if ui.button("Speichern").clicked() { self.save_edit(); }
-                if ui.button("Abbrechen").clicked() { self.selected_id = None; }
-            });
-        }
     }
 
     fn ui_prio(&mut self, ui: &mut egui::Ui) {
