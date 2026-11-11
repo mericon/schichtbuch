@@ -69,6 +69,15 @@ impl Store {
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL DEFAULT ''
             );
+
+            CREATE TABLE IF NOT EXISTS events (
+                id TEXT PRIMARY KEY,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                user TEXT NOT NULL DEFAULT '',
+                details TEXT NOT NULL DEFAULT '',
+                related_id TEXT NOT NULL DEFAULT ''
+            );
             "#,
         )?;
         // migration: add last_shift column if missing
@@ -77,6 +86,7 @@ impl Store {
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN frozen INTEGER DEFAULT 0", []);
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN time TEXT DEFAULT ''", []);
         let _ = self.conn.execute("ALTER TABLE master_statuses ADD COLUMN weight INTEGER NOT NULL DEFAULT 0", []);
+        let _ = self.conn.execute("ALTER TABLE handovers ADD COLUMN taken_over_by TEXT NOT NULL DEFAULT ''", []);
         // seed default statuses if empty
         let cnt: i64 = self.conn.query_row("SELECT COUNT(*) FROM master_statuses", [], |r| r.get(0)).unwrap_or(0);
         if cnt == 0 {
@@ -270,14 +280,14 @@ impl Store {
 
     pub fn record_handover(&self, h: &Handover) -> Result<()> {
         self.conn.execute(
-            "INSERT INTO handovers (id,from_shift,to_shift,date,performed_by,performed_at,archived_count,carried_count) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
-            params![h.id, h.from_shift.as_str(), h.to_shift.as_str(), h.date.to_string(), h.performed_by, h.performed_at.to_string(), h.archived_count, h.carried_count],
+            "INSERT INTO handovers (id,from_shift,to_shift,date,performed_by,taken_over_by,performed_at,archived_count,carried_count) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            params![h.id, h.from_shift.as_str(), h.to_shift.as_str(), h.date.to_string(), h.performed_by, h.taken_over_by, h.performed_at.to_string(), h.archived_count, h.carried_count],
         )?;
         Ok(())
     }
 
     pub fn list_handovers(&self) -> Result<Vec<Handover>> {
-        let mut stmt = self.conn.prepare("SELECT id,from_shift,to_shift,date,performed_by,performed_at,archived_count,carried_count FROM handovers ORDER BY performed_at DESC")?;
+        let mut stmt = self.conn.prepare("SELECT id,from_shift,to_shift,date,performed_by,taken_over_by,performed_at,archived_count,carried_count FROM handovers ORDER BY performed_at DESC")?;
         let rows = stmt.query_map([], |r| {
             Ok(Handover {
                 id: r.get(0)?,
@@ -285,9 +295,10 @@ impl Store {
                 to_shift: Shift::from_str(&r.get::<_,String>(2)?),
                 date: r.get::<_,String>(3)?.parse().unwrap_or_else(|_| chrono::Local::now().date_naive()),
                 performed_by: r.get(4)?,
-                performed_at: r.get::<_,String>(5)?.parse().unwrap_or_else(|_| chrono::Local::now().naive_local()),
-                archived_count: r.get(6)?,
-                carried_count: r.get(7)?,
+                taken_over_by: r.get(5)?,
+                performed_at: r.get::<_,String>(6)?.parse().unwrap_or_else(|_| chrono::Local::now().naive_local()),
+                archived_count: r.get(7)?,
+                carried_count: r.get(8)?,
             })
         })?;
         let mut out = Vec::new();
@@ -361,6 +372,30 @@ impl Store {
     pub fn set_status_weight(&self, name: &str, weight: i32) -> Result<()> {
         self.conn.execute("UPDATE master_statuses SET weight=?2 WHERE name=?1", params![name, weight])?;
         Ok(())
+    }
+
+    pub fn log_event(&self, event_type: &str, user: &str, details: &str, related_id: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO events (id, timestamp, event_type, user, details, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![uuid::Uuid::new_v4().to_string(), chrono::Local::now().naive_local().to_string(), event_type, user, details, related_id],
+        )?;
+        Ok(())
+    }
+    pub fn list_events(&self, limit: usize) -> Result<Vec<crate::domain::Event>> {
+        let mut stmt = self.conn.prepare("SELECT id, timestamp, event_type, user, details, related_id FROM events ORDER BY timestamp DESC LIMIT ?1")?;
+        let rows = stmt.query_map(params![limit as i64], |r| {
+            Ok(crate::domain::Event {
+                id: r.get(0)?,
+                timestamp: r.get::<_,String>(1)?.parse().unwrap_or_else(|_| chrono::Local::now().naive_local()),
+                event_type: r.get(2)?,
+                user: r.get(3)?,
+                details: r.get(4)?,
+                related_id: r.get(5)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for e in rows { out.push(e?); }
+        Ok(out)
     }
 
     pub fn get_setting(&self, key: &str) -> Result<String> {

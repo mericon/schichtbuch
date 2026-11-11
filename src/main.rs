@@ -46,6 +46,7 @@ enum Commands {
         #[arg(long)] to: String,
         #[arg(long)] date: String,
         #[arg(long)] user: String,
+        #[arg(long)] taken_by: Option<String>,
     },
     Handovers { #[arg(long)] db: PathBuf },
     Gui { #[arg(long)] db: Option<PathBuf> },
@@ -146,7 +147,7 @@ fn main() {
             let n = store.archive_completed(d, sh).expect("archive failed");
             println!("archived {} entries", n);
         }
-        Commands::Handover { db, from, to, date, user } => {
+        Commands::Handover { db, from, to, date, user, taken_by } => {
             let store = open(&db);
             let dd: NaiveDate = date.parse().expect("bad date");
             let fromsh = Shift::from_str(&from);
@@ -160,6 +161,7 @@ fn main() {
                 to_shift: tosh,
                 date: dd,
                 performed_by: user.clone(),
+                taken_over_by: taken_by.clone().unwrap_or_else(|| user.clone()),
                 performed_at: chrono::Local::now().naive_local(),
                 archived_count: archived,
                 carried_count: carried,

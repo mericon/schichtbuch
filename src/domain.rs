@@ -91,6 +91,7 @@ pub struct Handover {
     pub to_shift: Shift,
     pub date: NaiveDate,
     pub performed_by: String,
+    pub taken_over_by: String,
     pub performed_at: NaiveDateTime,
     pub archived_count: i64,
     pub carried_count: i64,
@@ -110,4 +111,14 @@ pub fn status_rgb(name: &str) -> (u8, u8, u8) {
     else if l.contains("bearbeitung") { (255, 215, 0) }
     else if l.contains("offen") { (255, 165, 0) }
     else { (128, 128, 128) }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Event {
+    pub id: String,
+    pub timestamp: NaiveDateTime,
+    pub event_type: String,
+    pub user: String,
+    pub details: String,
+    pub related_id: String,
 }
