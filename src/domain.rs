@@ -31,6 +31,7 @@ impl Shift {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Status {
     Offen,
+    StehtOffen,
     InBearbeitung,
     StehtInBearbeitung,
     Erledigt,
@@ -40,6 +41,7 @@ impl Status {
     pub fn as_str(&self) -> &'static str {
         match self {
             Status::Offen => "offen",
+            Status::StehtOffen => "steht offen",
             Status::InBearbeitung => "In Bearbeitung",
             Status::StehtInBearbeitung => "steht in Bearbeitung",
             Status::Erledigt => "erledigt",
@@ -48,12 +50,23 @@ impl Status {
     pub fn from_str(s: &str) -> Self {
         let l = s.to_lowercase();
         if l.contains("erledigt") { Status::Erledigt }
+        else if l.contains("steht") && l.contains("offen") { Status::StehtOffen }
         else if l.contains("steht") { Status::StehtInBearbeitung }
         else if l.contains("bearbeitung") { Status::InBearbeitung }
+        else if l.contains("offen") { Status::Offen }
         else { Status::Offen }
     }
     pub fn is_done(&self) -> bool { matches!(self, Status::Erledigt) }
     pub fn is_open(&self) -> bool { !self.is_done() }
+    pub fn rgb(&self) -> (u8, u8, u8) {
+        match self {
+            Status::Offen => (255, 165, 0),
+            Status::StehtOffen => (220, 20, 60),
+            Status::InBearbeitung => (255, 215, 0),
+            Status::StehtInBearbeitung => (220, 20, 60),
+            Status::Erledigt => (34, 139, 34),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
