@@ -21,7 +21,7 @@ pub fn run(db: PathBuf) {
                     style.visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
                     style.visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
                     style.visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
-                    style.spacing.item_spacing = egui::vec2(8.0, 6.0);
+                    style.spacing.item_spacing = egui::vec2(16.0, 6.0);
                     style.spacing.button_padding = egui::vec2(10.0, 5.0);
                     style.spacing.window_margin = egui::Margin::same(12);
                 });
