@@ -34,7 +34,7 @@ pub fn run(db: PathBuf) {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum Tab { Aktuell, Prio, Archiv, Frueh, Spaet, Nacht, Stammdaten, Uebergabe }
+enum Tab { Aktuell, Prio, Archiv, Stammdaten, Uebergabe }
 
 struct SchichtbuchApp {
     db_path: PathBuf,
@@ -325,9 +325,6 @@ impl eframe::App for SchichtbuchApp {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
                 ui.selectable_value(&mut self.tab, Tab::Prio, "Prio offen");
                 ui.selectable_value(&mut self.tab, Tab::Archiv, "Archiv");
-                ui.selectable_value(&mut self.tab, Tab::Frueh, "Früh");
-                ui.selectable_value(&mut self.tab, Tab::Spaet, "Spät");
-                ui.selectable_value(&mut self.tab, Tab::Nacht, "Nacht");
                 ui.selectable_value(&mut self.tab, Tab::Stammdaten, "Stammdaten");
                 ui.selectable_value(&mut self.tab, Tab::Uebergabe, "Übergabe");
             });
@@ -336,9 +333,6 @@ impl eframe::App for SchichtbuchApp {
                 Tab::Aktuell => self.ui_aktuell(ui),
                 Tab::Prio => self.ui_prio(ui),
                 Tab::Archiv => self.ui_archiv(ui),
-                Tab::Frueh => self.ui_shift_view(ui, "Früh"),
-                Tab::Spaet => self.ui_shift_view(ui, "Spät"),
-                Tab::Nacht => self.ui_shift_view(ui, "Nacht"),
                 Tab::Stammdaten => self.ui_stamm(ui),
                 Tab::Uebergabe => self.ui_uebergabe(ui),
             }
@@ -507,7 +501,9 @@ impl SchichtbuchApp {
             ui.add_sized([60.0, 18.0], egui::Label::new("Datum:"));
             ui.add(egui::TextEdit::singleline(&mut self.filter_date).desired_width(120.0));
             ui.add_sized([70.0, 18.0], egui::Label::new("Schicht:"));
-            ui.add(egui::TextEdit::singleline(&mut self.filter_shift).desired_width(120.0));
+            egui::ComboBox::from_id_salt("filter_shift").selected_text(&self.filter_shift).show_ui(ui, |ui| {
+                for sh in ["Früh", "Spät", "Nacht", "Tag"] { ui.selectable_value(&mut self.filter_shift, sh.to_string(), sh); }
+            });
             if ui.button("Laden").clicked() { self.reload(); }
         });
         ui.separator();
@@ -654,47 +650,6 @@ impl SchichtbuchApp {
                     });
                 }
             });
-    }
-
-    fn ui_shift_view(&mut self, ui: &mut egui::Ui, shift: &str) {
-        ui.horizontal(|ui| {
-            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.sicht_date).desired_width(260.0));
-            if ui.button("Laden").clicked() { self.reload(); }
-        });
-        ui.separator();
-        let date: Option<NaiveDate> = self.sicht_date.parse().ok();
-        if let Some(d) = date {
-            let entries = self.store.as_ref().map(|st| st.list_current_shift(d, Shift::from_str(shift)).unwrap_or_default()).unwrap_or_default();
-            TableBuilder::new(ui)
-                .striped(true)
-                .resizable(true)
-                .column(Column::initial(90.0).resizable(true))
-                .column(Column::initial(120.0).resizable(true))
-                .column(Column::initial(80.0).resizable(true))
-                .column(Column::initial(160.0).resizable(true))
-                .column(Column::initial(160.0).resizable(true))
-                .column(Column::initial(100.0).resizable(true))
-                .header(16.0, |mut h| {
-                    h.col(|ui| { ui.strong("Status"); });
-                    h.col(|ui| { ui.strong("Anlage"); });
-                    h.col(|ui| { ui.strong("Prio"); });
-                    h.col(|ui| { ui.strong("Störmeldung"); });
-                    h.col(|ui| { ui.strong("Maßnahme"); });
-                    h.col(|ui| { ui.strong("Bearbeiter"); });
-                })
-                .body(|mut body| {
-                    for e in entries {
-                        body.row(16.0, |mut row| {
-                            row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
-                            row.col(|ui| { ui.label(&e.plant); });
-                            row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
-                            row.col(|ui| { ui.label(&e.fault); });
-                            row.col(|ui| { ui.label(&e.action); });
-                            row.col(|ui| { ui.label(&e.last_editor); });
-                        });
-                    }
-                });
-        }
     }
 
     fn ui_stamm(&mut self, ui: &mut egui::Ui) {
