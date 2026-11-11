@@ -60,7 +60,6 @@ impl Status {
         else { Status::Offen }
     }
     pub fn is_done(&self) -> bool { matches!(self, Status::Erledigt) }
-    pub fn is_open(&self) -> bool { !self.is_done() }
     pub fn rgb(&self) -> (u8, u8, u8) {
         match self {
             Status::Offen => (255, 165, 0),

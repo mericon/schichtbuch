@@ -13,19 +13,19 @@ pub fn run(db: PathBuf) {
         options,
         Box::new(move |cc| {
             // Modern dark theme
-            cc.egui_ctx.global_style_mut(|style| {
-                style.visuals = egui::Visuals::dark();
-                style.visuals.window_corner_radius = egui::CornerRadius::same(12);
-                style.visuals.menu_corner_radius = egui::CornerRadius::same(8);
-                style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::same(6);
-                style.visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
-                style.visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
-                style.visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
-                
-                style.spacing.item_spacing = egui::vec2(8.0, 6.0);
-                style.spacing.button_padding = egui::vec2(10.0, 5.0);
-                style.spacing.window_margin = egui::Margin::same(12);
-            });
+            for theme in [egui::Theme::Dark, egui::Theme::Light] {
+                cc.egui_ctx.style_mut_of(theme, |style| {
+                    style.visuals.window_corner_radius = egui::CornerRadius::same(12);
+                    style.visuals.menu_corner_radius = egui::CornerRadius::same(8);
+                    style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::same(6);
+                    style.visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
+                    style.visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
+                    style.visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
+                    style.spacing.item_spacing = egui::vec2(8.0, 6.0);
+                    style.spacing.button_padding = egui::vec2(10.0, 5.0);
+                    style.spacing.window_margin = egui::Margin::same(12);
+                });
+            }
             let mut app = SchichtbuchApp::new(db.clone());
             app.reload();
             Ok(Box::new(app))
@@ -50,7 +50,6 @@ struct SchichtbuchApp {
     tab: Tab,
     filter_date: String,
     filter_shift: String,
-    sicht_date: String,
     current_entries: Vec<Entry>,
     prio_entries: Vec<Entry>,
     archive_query: String,
@@ -122,7 +121,6 @@ impl SchichtbuchApp {
             tab: Tab::Aktuell,
             filter_date: today.clone(),
             filter_shift: "Früh".into(),
-            sicht_date: today.clone(),
             current_entries: vec![],
             prio_entries: vec![],
             archive_query: String::new(),
@@ -306,9 +304,7 @@ impl SchichtbuchApp {
 impl eframe::App for SchichtbuchApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if self.last_applied_dark != Some(self.dark_mode) {
-            let v = if self.dark_mode { egui::Visuals::dark() } else { egui::Visuals::light() };
-            ui.ctx().set_visuals(v.clone());
-            ui.ctx().global_style_mut(|st| { st.visuals = v; });
+            if self.dark_mode { ui.ctx().set_theme(egui::Theme::Dark); } else { ui.ctx().set_theme(egui::Theme::Light); }
             self.last_applied_dark = Some(self.dark_mode);
         }
         egui::Panel::top("top").show(ui, |ui| {
@@ -367,7 +363,7 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
                 egui::Window::new("Meldungs-Details").resizable(true).scroll([true, true]).default_width(420.0).open(&mut open).show(&ctx, |ui| {
-                    if let Some(e) = &entry {
+                    if entry.is_some() {
                         TableBuilder::new(ui)
                             .resizable(true)
                             .column(Column::initial(130.0).resizable(true))

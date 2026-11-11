@@ -19,12 +19,6 @@ impl Store {
         Ok(store)
     }
 
-    pub fn open_in_memory() -> Result<Self> {
-        let conn = Connection::open_in_memory()?;
-        let store = Self { conn };
-        store.init_schema()?;
-        Ok(store)
-    }
 
     fn init_schema(&self) -> Result<()> {
         self.conn.execute_batch(
@@ -148,10 +142,6 @@ impl Store {
         Ok(())
     }
 
-    pub fn delete_entry(&self, id: &str) -> Result<()> {
-        self.conn.execute("DELETE FROM entries WHERE id=?1", params![id])?;
-        Ok(())
-    }
 
     pub fn get_entry(&self, id: &str) -> Result<Option<Entry>> {
         let mut stmt = self.conn.prepare(
