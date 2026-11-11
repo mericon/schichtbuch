@@ -206,7 +206,11 @@ impl SchichtbuchApp {
             // sort
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.current_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
-                "status" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.status.as_str().cmp(b.status.as_str())); } else { self.current_entries.sort_by(|a,b| b.status.as_str().cmp(a.status.as_str())); } }
+                "status" => {
+                    let w = |name: &str| self.statuses.iter().find(|(n,_)| n == name).map(|(_,w)| *w).unwrap_or(i32::MAX);
+                    if self.sort_asc { self.current_entries.sort_by(|a,b| w(&a.status).cmp(&w(&b.status)).then(a.status.cmp(&b.status))); }
+                    else { self.current_entries.sort_by(|a,b| w(&b.status).cmp(&w(&a.status)).then(b.status.cmp(&a.status))); }
+                }
                 _ => {}
             }
             self.status_msg = format!("{} Einträge (aktuelle Schicht) | DB: {}", self.current_entries.len(), self.db_path.display());
