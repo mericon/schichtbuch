@@ -467,11 +467,13 @@ impl eframe::App for SchichtbuchApp {
             if self.show_new_window {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Neuer Eintrag").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Neuer Eintrag").resizable(true).auto_sized().default_width(460.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(260.0)); ui.end_row();
-                        ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(260.0)); ui.end_row();
+                        ui.label("Schicht:"); egui::ComboBox::from_id_salt("new_shift").selected_text(&self.new_shift).show_ui(ui, |ui| {
+                            for sh in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.new_shift, sh.to_string(), sh); }
+                        }); ui.end_row();
                         ui.label("Anlage:"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
                             for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
                         }); ui.end_row();
@@ -489,17 +491,30 @@ impl eframe::App for SchichtbuchApp {
                         egui::ScrollArea::vertical().max_height(15.0 * 14.0).auto_shrink([false, false]).show(ui, |ui| {
                             ui.add(egui::TextEdit::multiline(&mut self.new_action).desired_rows(4).desired_width(260.0));
                         }); ui.end_row();
-                        ui.label("Bilder:"); ui.horizontal(|ui| {
-                            ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(260.0));
-                            if ui.button("Anhängen").clicked() {
-                                if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
-                                    for path in paths {
-                                        if !self.new_images.is_empty() { self.new_images.push(';'); }
-                                        self.new_images.push_str(&path.to_string_lossy());
-                                    }
+                        ui.label("Bilder:");
+                        let mut to_remove: Option<usize> = None;
+                        let imgs: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                        for (i, img) in imgs.iter().enumerate() {
+                            ui.horizontal(|ui| {
+                                let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
+                                if ui.link(&name).clicked() { let _ = opener::open(img); }
+                                if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
+                            });
+                        }
+                        if let Some(i) = to_remove {
+                            let mut v: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                            if i < v.len() { v.remove(i); }
+                            self.new_images = v.join(";");
+                        }
+                        if ui.button("Bilder anhängen").clicked() {
+                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                                for path in paths {
+                                    if !self.new_images.is_empty() { self.new_images.push(';'); }
+                                    self.new_images.push_str(&path.to_string_lossy());
                                 }
                             }
-                        }); ui.end_row();
+                        }
+                        ui.end_row();
                     });
                     ui.horizontal(|ui| {
                         if ui.button("Hinzufügen").clicked() { self.add_entry(); self.show_new_window = false; }
