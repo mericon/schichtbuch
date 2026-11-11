@@ -401,7 +401,8 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
-                egui::Window::new("Meldungs-Details").resizable(true).auto_sized().scroll([true, true]).frame(egui::Frame::default().fill(ui.visuals().window_fill).inner_margin(egui::Margin::same(76))).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Meldungs-Details").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
                     if entry.is_some() {
                         TableBuilder::new(ui)
                             .resizable(true)
@@ -448,6 +449,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Eintrag nicht gefunden");
                     }
                 });
+                    });
                 if !open { self.detail_id = None; }
             }
 
@@ -455,7 +457,8 @@ impl eframe::App for SchichtbuchApp {
             if self.show_new_window {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Neuer Eintrag").resizable(true).auto_sized().scroll([true, true]).frame(egui::Frame::default().fill(ui.visuals().window_fill).inner_margin(egui::Margin::same(76))).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Neuer Eintrag").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
                     egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(260.0)); ui.end_row();
                         ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(260.0)); ui.end_row();
@@ -490,6 +493,7 @@ impl eframe::App for SchichtbuchApp {
                         if ui.button("Abbrechen").clicked() { self.show_new_window = false; }
                     });
                 });
+                    });
                 if !open { self.show_new_window = false; }
             }
 
@@ -497,7 +501,8 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").resizable(true).auto_sized().scroll([true, true]).frame(egui::Frame::default().fill(ui.visuals().window_fill).inner_margin(egui::Margin::same(76))).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Eintrag bearbeiten").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(76)).show(ui, |ui| {
                     egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                             for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
@@ -550,6 +555,7 @@ impl eframe::App for SchichtbuchApp {
                         if ui.button("Abbrechen").clicked() { self.show_edit_window = false; self.selected_id = None; }
                     });
                 });
+                    });
                 if !open { self.show_edit_window = false; self.selected_id = None; }
             }
         });
