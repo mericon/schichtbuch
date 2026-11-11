@@ -312,7 +312,7 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
-                egui::Window::new("Meldungs-Details").open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Meldungs-Details").resizable(true).default_width(420.0).open(&mut open).show(&ctx, |ui| {
                     if let Some(e) = &entry {
                         egui::Grid::new("detail_grid").show(ui, |ui| {
                             ui.label("Datum:"); ui.label(e.date.to_string()); ui.end_row();
@@ -328,10 +328,11 @@ impl eframe::App for SchichtbuchApp {
                             ui.label("An wen übergeben?"); ui.label(&e.handed_over_to); ui.end_row();
                             ui.label("Ausfallzeit:"); ui.label(&e.downtime); ui.end_row();
                             ui.label("Maßnahme:"); ui.label(&e.action); ui.end_row();
-                            ui.label("Bilder:"); 
+                            ui.label("Bilder:");
                             ui.vertical(|ui| {
                                 for img in e.images.split(';').filter(|s| !s.is_empty()) {
-                                    if ui.link(img).clicked() { let _ = opener::open(img); }
+                                    let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.to_string());
+                                    if ui.link(&name).clicked() { let _ = opener::open(img); }
                                 }
                                 if e.images.is_empty() { ui.label("(keine)"); }
                             });
