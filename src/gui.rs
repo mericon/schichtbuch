@@ -34,7 +34,7 @@ pub fn run(db: PathBuf) {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum Tab { Aktuell, Prio, Planbaustellen, Archiv, Ereignislog, Stammdaten, Uebergabe }
+enum Tab { Aktuell, Planbaustellen, Archiv, Ereignislog, Stammdaten, Uebergabe }
 
 struct SchichtbuchApp {
     db_path: PathBuf,
@@ -218,6 +218,15 @@ impl SchichtbuchApp {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
             let all = store.list_entries(false).unwrap_or_default();
             self.aktuell_entries = all.into_iter().filter(|e| e.status != "erledigt" && e.status != "geplant").collect();
+            match self.sort_column.as_str() {
+                "time" => { if self.sort_asc { self.aktuell_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.aktuell_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
+                "status" => {
+                    let w = |name: &str| self.statuses.iter().find(|(n,_)| n == name).map(|(_,w)| *w).unwrap_or(i32::MAX);
+                    if self.sort_asc { self.aktuell_entries.sort_by(|a,b| w(&a.status).cmp(&w(&b.status)).then(a.status.cmp(&b.status))); }
+                    else { self.aktuell_entries.sort_by(|a,b| w(&b.status).cmp(&w(&a.status)).then(b.status.cmp(&a.status))); }
+                }
+                _ => {}
+            }
             // sort
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.current_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
@@ -388,7 +397,6 @@ impl eframe::App for SchichtbuchApp {
         egui::CentralPanel::default().frame(egui::Frame::default().fill(ui.visuals().panel_fill).inner_margin(egui::Margin::same(38))).show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
-                ui.selectable_value(&mut self.tab, Tab::Prio, "Prio offen");
                 ui.selectable_value(&mut self.tab, Tab::Planbaustellen, "Planbaustellen");
                 ui.selectable_value(&mut self.tab, Tab::Archiv, "Archiv");
                 ui.selectable_value(&mut self.tab, Tab::Ereignislog, "Ereignislog");
@@ -398,7 +406,6 @@ impl eframe::App for SchichtbuchApp {
             ui.separator();
             match self.tab {
                 Tab::Aktuell => self.ui_aktuell(ui),
-                Tab::Prio => self.ui_prio(ui),
                 Tab::Planbaustellen => self.ui_planbaustellen(ui),
                 Tab::Archiv => self.ui_archiv(ui),
                 Tab::Ereignislog => self.ui_events(ui),
@@ -681,36 +688,6 @@ impl SchichtbuchApp {
             }
         }
 
-    }
-
-    fn ui_prio(&mut self, ui: &mut egui::Ui) {
-        if ui.button("Aktualisieren").clicked() { self.reload(); }
-        TableBuilder::new(ui)
-            .striped(true)
-            .resizable(true)
-            .column(Column::initial(50.0).resizable(true))
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(150.0).resizable(true))
-            .column(Column::initial(110.0).resizable(true))
-            .column(Column::initial(250.0).resizable(true))
-            .header(18.0, |mut header| {
-                header.col(|ui| { ui.strong("Prio"); });
-                header.col(|ui| { ui.strong("Datum"); });
-                header.col(|ui| { ui.strong("Anlage"); });
-                header.col(|ui| { ui.strong("Status"); });
-                header.col(|ui| { ui.strong("Störmeldung"); });
-            })
-            .body(|mut body| {
-                for e in self.prio_entries.clone() {
-                    body.row(16.0, |mut row| {
-                        row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
-                        row.col(|ui| { ui.label(e.date.to_string()); });
-                        row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); });
-                        row.col(|ui| { ui.label(&e.fault); });
-                    });
-                }
-            });
     }
 
     fn ui_archiv(&mut self, ui: &mut egui::Ui) {
