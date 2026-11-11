@@ -617,6 +617,7 @@ impl SchichtbuchApp {
         let mut clicked_id: Option<String> = None;
         let mut detail_id: Option<String> = None;
         let mut copied_sap: String = String::new();
+        ui.separator();
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -679,6 +680,7 @@ impl SchichtbuchApp {
                     });
                 }
             });
+        ui.separator();
         if !copied_sap.is_empty() { self.status_msg = format!("SAP {} kopiert", copied_sap); }
         if let Some(id) = detail_id { self.detail_id = Some(id); }
         if let Some(id) = clicked_id {
