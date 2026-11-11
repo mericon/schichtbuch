@@ -488,7 +488,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Maßnahme:"); 
-                        let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
+                        let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
                         ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4)); ui.end_row();
                         ui.label("Bilder:");
                         let mut to_remove: Option<usize> = None;
@@ -552,7 +552,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
                     });
                     ui.label("Maßnahme");
-                    let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
+                    let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
                     ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
