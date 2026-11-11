@@ -402,31 +402,34 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 egui::Window::new("Neuer Eintrag").resizable(true).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    ui.horizontal(|ui| { ui.label("Datum"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Schicht"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
-                        for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
-                        for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("SAP"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Störmeldung"); ui.add(egui::TextEdit::singleline(&mut self.new_fault).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("new_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
-                        for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("Prio"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Maßnahme"); ui.add(egui::TextEdit::singleline(&mut self.new_action).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Bilder"); ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(f32::INFINITY));
-                        if ui.button("Anhängen").clicked() {
-                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
-                                for path in paths {
-                                    if !self.new_images.is_empty() { self.new_images.push(';'); }
-                                    self.new_images.push_str(&path.to_string_lossy());
+                    egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
+                        ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.new_shift).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Anlage:"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
+                            for p in &self.plants.clone() { ui.selectable_value(&mut self.new_plant, p.clone(), p); }
+                        }); ui.end_row();
+                        ui.label("Status:"); egui::ComboBox::from_id_salt("new_status").selected_text(&self.new_status).show_ui(ui, |ui| {
+                            for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.new_status, s.to_string(), s); }
+                        }); ui.end_row();
+                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.new_fault).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("new_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
+                            for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
+                        }); ui.end_row();
+                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Maßnahme:"); ui.add(egui::TextEdit::singleline(&mut self.new_action).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Bilder:"); ui.horizontal(|ui| {
+                            ui.add(egui::TextEdit::singleline(&mut self.new_images).desired_width(f32::INFINITY));
+                            if ui.button("Anhängen").clicked() {
+                                if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                                    for path in paths {
+                                        if !self.new_images.is_empty() { self.new_images.push(';'); }
+                                        self.new_images.push_str(&path.to_string_lossy());
+                                    }
                                 }
                             }
-                        }
+                        }); ui.end_row();
                     });
                     ui.horizontal(|ui| {
                         if ui.button("Hinzufügen").clicked() { self.add_entry(); self.show_new_window = false; }
@@ -441,23 +444,25 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 egui::Window::new("Eintrag bearbeiten").resizable(true).scroll([true, true]).default_width(460.0).open(&mut open).show(&ctx, |ui| {
-                    ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
-                        for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("Schicht"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
-                        for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("edit_plant").selected_text(if self.edit_plant.is_empty() {"(wählen)"} else {&self.edit_plant}).show_ui(ui, |ui| {
-                        for p in &self.plants.clone() { ui.selectable_value(&mut self.edit_plant, p.clone(), p); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("Verantwortlich"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
-                        for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
-                    }); });
-                    ui.horizontal(|ui| { ui.label("SAP"); ui.add(egui::TextEdit::singleline(&mut self.edit_sap).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Störmeldung"); ui.add(egui::TextEdit::singleline(&mut self.edit_fault).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.add(egui::TextEdit::singleline(&mut self.edit_downtime).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(f32::INFINITY)); });
-                    ui.horizontal(|ui| { ui.label("Prio"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); });
+                    egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
+                        ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
+                            for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
+                        }); ui.end_row();
+                        ui.label("Schicht:"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
+                            for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
+                        }); ui.end_row();
+                        ui.label("Anlage:"); egui::ComboBox::from_id_salt("edit_plant").selected_text(if self.edit_plant.is_empty() {"(wählen)"} else {&self.edit_plant}).show_ui(ui, |ui| {
+                            for p in &self.plants.clone() { ui.selectable_value(&mut self.edit_plant, p.clone(), p); }
+                        }); ui.end_row();
+                        ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
+                            for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
+                        }); ui.end_row();
+                        ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.edit_sap).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.edit_fault).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_downtime).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("An wen übergeben?:"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(f32::INFINITY)); ui.end_row();
+                        ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
+                    });
                     ui.label("Maßnahme");
                     egui::ScrollArea::vertical().max_height(15.0 * 14.0).auto_shrink([false, false]).show(ui, |ui| {
                         ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
@@ -499,8 +504,10 @@ impl eframe::App for SchichtbuchApp {
 impl SchichtbuchApp {
     fn ui_aktuell(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.filter_date).desired_width(f32::INFINITY));
-            ui.label("Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.filter_shift).desired_width(f32::INFINITY));
+            ui.add_sized([60.0, 18.0], egui::Label::new("Datum:"));
+            ui.add(egui::TextEdit::singleline(&mut self.filter_date).desired_width(120.0));
+            ui.add_sized([70.0, 18.0], egui::Label::new("Schicht:"));
+            ui.add(egui::TextEdit::singleline(&mut self.filter_shift).desired_width(120.0));
             if ui.button("Laden").clicked() { self.reload(); }
         });
         ui.separator();
@@ -819,10 +826,12 @@ impl SchichtbuchApp {
     }
 
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| { ui.label("Datum"); ui.add(egui::TextEdit::singleline(&mut self.ho_date).desired_width(f32::INFINITY)); });
-        ui.horizontal(|ui| { ui.label("Von Schicht"); ui.add(egui::TextEdit::singleline(&mut self.ho_from).desired_width(f32::INFINITY)); });
-        ui.horizontal(|ui| { ui.label("Nach Schicht"); ui.add(egui::TextEdit::singleline(&mut self.ho_to).desired_width(f32::INFINITY)); });
-        ui.horizontal(|ui| { ui.label("Benutzer"); ui.add(egui::TextEdit::singleline(&mut self.ho_user).desired_width(f32::INFINITY)); });
+        egui::Grid::new("ho_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
+            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.ho_date).desired_width(f32::INFINITY)); ui.end_row();
+            ui.label("Von Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_from).desired_width(f32::INFINITY)); ui.end_row();
+            ui.label("Nach Schicht:"); ui.add(egui::TextEdit::singleline(&mut self.ho_to).desired_width(f32::INFINITY)); ui.end_row();
+            ui.label("Benutzer:"); ui.add(egui::TextEdit::singleline(&mut self.ho_user).desired_width(f32::INFINITY)); ui.end_row();
+        });
         if ui.button("Schichtübergabe durchführen").clicked() {
             self.do_handover();
         }
