@@ -404,7 +404,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Eintrag bearbeiten").resizable(true).default_width(460.0).open(&mut open).show(&ctx, |ui| {
                     ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                         for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
                     }); });
@@ -422,17 +422,31 @@ impl eframe::App for SchichtbuchApp {
                     ui.horizontal(|ui| { ui.label("Ausfallzeit"); ui.text_edit_singleline(&mut self.edit_downtime); });
                     ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.text_edit_singleline(&mut self.edit_handed); });
                     ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.edit_priority); });
-                    ui.horizontal(|ui| { ui.label("Maßnahme"); ui.text_edit_singleline(&mut self.edit_action); });
-                    ui.horizontal(|ui| { ui.label("Bilder"); ui.text_edit_singleline(&mut self.edit_images);
-                        if ui.button("Anhängen").clicked() {
-                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
-                                for path in paths {
-                                    if !self.edit_images.is_empty() { self.edit_images.push(';'); }
-                                    self.edit_images.push_str(&path.to_string_lossy());
-                                }
+                    ui.label("Maßnahme");
+                    ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                    ui.label("Bilder:");
+                    let mut to_remove: Option<usize> = None;
+                    let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                    for (i, img) in imgs.iter().enumerate() {
+                        ui.horizontal(|ui| {
+                            let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
+                            if ui.link(&name).clicked() { let _ = opener::open(img); }
+                            if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
+                        });
+                    }
+                    if let Some(i) = to_remove {
+                        let mut v: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                        if i < v.len() { v.remove(i); }
+                        self.edit_images = v.join(";");
+                    }
+                    if ui.button("Bilder anhängen").clicked() {
+                        if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                            for path in paths {
+                                if !self.edit_images.is_empty() { self.edit_images.push(';'); }
+                                self.edit_images.push_str(&path.to_string_lossy());
                             }
                         }
-                    });
+                    }
                     ui.horizontal(|ui| {
                         if ui.button("Speichern").clicked() { self.save_edit(); self.show_edit_window = false; }
                         if ui.button("Abbrechen").clicked() { self.show_edit_window = false; self.selected_id = None; }
