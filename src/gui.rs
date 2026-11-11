@@ -411,7 +411,7 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
-                egui::Window::new("Meldungs-Details").resizable(true).default_width(460.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Meldungs-Details").resizable(true).default_width(460.0).default_height(900.0).min_width(400.0).min_height(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     if entry.is_some() {
                         TableBuilder::new(ui)
@@ -467,7 +467,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_new_window {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Neuer Eintrag").resizable(true).default_width(460.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Neuer Eintrag").resizable(true).default_width(460.0).default_height(900.0).min_width(400.0).min_height(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("new_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(f32::INFINITY)); ui.end_row();
@@ -489,7 +489,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Maßnahme:"); 
                         let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
-                        ui.add_sized([f32::INFINITY, h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4)); ui.end_row();
+                        ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4)); ui.end_row();
                         ui.label("Bilder:");
                         let mut to_remove: Option<usize> = None;
                         let imgs: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
@@ -528,7 +528,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").resizable(true).default_width(460.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Eintrag bearbeiten").resizable(true).default_width(460.0).default_height(900.0).min_width(400.0).min_height(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
@@ -553,7 +553,7 @@ impl eframe::App for SchichtbuchApp {
                     });
                     ui.label("Maßnahme");
                     let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
-                    ui.add_sized([f32::INFINITY, h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
+                    ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
                     let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
