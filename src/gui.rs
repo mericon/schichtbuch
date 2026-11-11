@@ -255,7 +255,6 @@ impl SchichtbuchApp {
     fn save_edit(&mut self) {
         let Some(store) = self.store.as_mut() else { return; };
         let Some(id) = self.selected_id.clone() else { return; };
-        if let Some(e0) = store.get_entry(&id).unwrap_or(None) { if e0.frozen { self.status_msg = "Eintrag ist eingefroren und kann nicht bearbeitet werden".into(); return; } }
         if let Some(mut e) = store.get_entry(&id).unwrap_or(None) {
             e.status = self.edit_status.clone();
             e.time = self.edit_time.clone();
@@ -620,7 +619,7 @@ impl SchichtbuchApp {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.time); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); });
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| {
                             if !e.sap_order.is_empty() && ui.small_button(&e.sap_order).clicked() {
@@ -680,7 +679,7 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
                 }
@@ -717,7 +716,7 @@ impl SchichtbuchApp {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); });
                         row.col(|ui| { ui.label(&e.sap_order); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
