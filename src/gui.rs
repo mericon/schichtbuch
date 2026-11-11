@@ -312,7 +312,7 @@ impl eframe::App for SchichtbuchApp {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
                 let entry = self.store.as_ref().and_then(|st| st.get_entry(&id).ok().flatten());
-                egui::Window::new("Meldungs-Details").resizable(true).default_width(420.0).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Meldungs-Details").resizable(true).scroll([true, true]).default_width(420.0).open(&mut open).show(&ctx, |ui| {
                     if let Some(e) = &entry {
                         TableBuilder::new(ui)
                             .resizable(true)
@@ -365,7 +365,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_new_window {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Neuer Eintrag").open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Neuer Eintrag").resizable(true).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     ui.horizontal(|ui| { ui.label("Datum"); ui.text_edit_singleline(&mut self.new_date); });
                     ui.horizontal(|ui| { ui.label("Schicht"); ui.text_edit_singleline(&mut self.new_shift); });
                     ui.horizontal(|ui| { ui.label("Anlage"); egui::ComboBox::from_id_salt("new_plant").selected_text(if self.new_plant.is_empty() {"(wählen)"} else {&self.new_plant}).show_ui(ui, |ui| {
@@ -404,7 +404,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").resizable(true).default_width(460.0).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new("Eintrag bearbeiten").resizable(true).scroll([true, true]).default_width(460.0).open(&mut open).show(&ctx, |ui| {
                     ui.horizontal(|ui| { ui.label("Status"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                         for s in ["offen","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
                     }); });
@@ -423,7 +423,9 @@ impl eframe::App for SchichtbuchApp {
                     ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.text_edit_singleline(&mut self.edit_handed); });
                     ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.edit_priority); });
                     ui.label("Maßnahme");
-                    ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                    egui::ScrollArea::vertical().max_height(15.0 * 14.0).show(ui, |ui| {
+                        ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                    });
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
                     let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
