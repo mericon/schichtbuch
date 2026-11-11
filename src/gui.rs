@@ -6,7 +6,8 @@ use egui_extras::{Column, TableBuilder};
 use std::path::PathBuf;
 
 pub fn run(db: PathBuf) {
-    let options = eframe::NativeOptions::default();
+    let mut options = eframe::NativeOptions::default();
+    options.viewport = options.viewport.with_maximized(true);
     let _ = eframe::run_native(
         "Schichtbuch",
         options,
