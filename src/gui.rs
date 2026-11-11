@@ -507,7 +507,7 @@ impl SchichtbuchApp {
             if ui.button("Laden").clicked() { self.reload(); }
         });
         ui.separator();
-        if ui.button("Neuer Eintrag").clicked() { self.show_new_window = true; }
+        if ui.button("Neuer Eintrag").clicked() { self.new_shift = self.filter_shift.clone(); if self.new_date.trim().is_empty() { self.new_date = self.filter_date.clone(); } self.show_new_window = true; }
         ui.separator();
 
         // Table
