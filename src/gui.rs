@@ -34,7 +34,7 @@ pub fn run(db: PathBuf) {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum Tab { Aktuell, Prio, Archiv, Ereignislog, Stammdaten, Uebergabe }
+enum Tab { Aktuell, Prio, Planbaustellen, Archiv, Ereignislog, Stammdaten, Uebergabe }
 
 struct SchichtbuchApp {
     db_path: PathBuf,
@@ -51,6 +51,7 @@ struct SchichtbuchApp {
     filter_date: String,
     filter_shift: String,
     current_entries: Vec<Entry>,
+    aktuell_entries: Vec<Entry>,
     prio_entries: Vec<Entry>,
     archive_query: String,
     archive_filter_plant: String,
@@ -86,6 +87,7 @@ struct SchichtbuchApp {
     // edit
     selected_id: Option<String>,
     detail_id: Option<String>,
+    plan_status_edits: std::collections::HashMap<String, String>,
     sort_column: String,
     sort_asc: bool,
     show_new_window: bool,
@@ -131,6 +133,7 @@ impl SchichtbuchApp {
             filter_date: today.clone(),
             filter_shift: "Früh".into(),
             current_entries: vec![],
+            aktuell_entries: vec![],
             prio_entries: vec![],
             archive_query: String::new(),
             archive_filter_plant: String::new(),
@@ -164,6 +167,7 @@ impl SchichtbuchApp {
             new_images: String::new(),
             selected_id: None,
             detail_id: None,
+            plan_status_edits: std::collections::HashMap::new(),
             sort_column: String::new(),
             sort_asc: true,
             show_new_window: false,
@@ -210,6 +214,8 @@ impl SchichtbuchApp {
         if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
         if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
+            let all = store.list_entries(false).unwrap_or_default();
+            self.aktuell_entries = all.into_iter().filter(|e| e.status != "erledigt" && e.status != "geplant").collect();
             // sort
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.current_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
@@ -380,6 +386,7 @@ impl eframe::App for SchichtbuchApp {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
                 ui.selectable_value(&mut self.tab, Tab::Prio, "Prio offen");
+                ui.selectable_value(&mut self.tab, Tab::Planbaustellen, "Planbaustellen");
                 ui.selectable_value(&mut self.tab, Tab::Archiv, "Archiv");
                 ui.selectable_value(&mut self.tab, Tab::Ereignislog, "Ereignislog");
                 ui.selectable_value(&mut self.tab, Tab::Stammdaten, "Stammdaten");
@@ -389,6 +396,7 @@ impl eframe::App for SchichtbuchApp {
             match self.tab {
                 Tab::Aktuell => self.ui_aktuell(ui),
                 Tab::Prio => self.ui_prio(ui),
+                Tab::Planbaustellen => self.ui_planbaustellen(ui),
                 Tab::Archiv => self.ui_archiv(ui),
                 Tab::Ereignislog => self.ui_events(ui),
                 Tab::Stammdaten => self.ui_stamm(ui),
@@ -615,7 +623,7 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Bearb."); });
             })
             .body(|mut body| {
-                for e in self.current_entries.clone() {
+                for e in self.aktuell_entries.clone() {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.time); });
@@ -648,7 +656,7 @@ impl SchichtbuchApp {
         if !copied_sap.is_empty() { self.status_msg = format!("SAP {} kopiert", copied_sap); }
         if let Some(id) = detail_id { self.detail_id = Some(id); }
         if let Some(id) = clicked_id {
-            if let Some(e) = self.current_entries.iter().find(|x| x.id == id).cloned() {
+            if let Some(e) = self.aktuell_entries.iter().find(|x| x.id == id).cloned() {
                 self.load_edit(&e);
                 self.show_edit_window = true;
             }
@@ -920,6 +928,65 @@ impl SchichtbuchApp {
                 }
             });
         });
+    }
+
+    fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
+        if ui.button("Aktualisieren").clicked() { self.reload(); }
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
+        TableBuilder::new(ui)
+            .striped(true)
+            .resizable(true)
+            .sense(egui::Sense::click())
+            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::initial(80.0).resizable(true))
+            .column(Column::initial(60.0).resizable(true))
+            .column(Column::initial(90.0).resizable(true))
+            .column(Column::initial(130.0).resizable(true))
+            .column(Column::initial(60.0).resizable(true))
+            .column(Column::remainder().resizable(true))
+            .column(Column::initial(60.0).resizable(true))
+            .header(18.0, |mut header| {
+                header.col(|ui| { ui.strong("Datum"); });
+                header.col(|ui| { ui.strong("Uhrzeit"); });
+                header.col(|ui| { ui.strong("Status"); });
+                header.col(|ui| { ui.strong("Anlage"); });
+                header.col(|ui| { ui.strong("Prio"); });
+                header.col(|ui| { ui.strong("Störmeldung"); });
+                header.col(|ui| { ui.strong("Speichern"); });
+            })
+            .body(|mut body| {
+                for e in entries {
+                    body.row(16.0, |mut row| {
+                        row.col(|ui| { ui.label(e.date.to_string()); });
+                        row.col(|ui| { ui.label(&e.time); });
+                        let cur = self.plan_status_edits.get(&e.id).cloned().unwrap_or_else(|| e.status.clone());
+                        row.col(|ui| {
+                            egui::ComboBox::from_id_salt(format!("plan_status_{}", e.id)).selected_text(&cur).show_ui(ui, |ui| {
+                                for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] {
+                                    if ui.selectable_value(self.plan_status_edits.entry(e.id.clone()).or_insert_with(|| e.status.clone()), s.to_string(), s).clicked() {}
+                                }
+                            });
+                        });
+                        row.col(|ui| { ui.label(&e.plant); });
+                        row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
+                        row.col(|ui| { ui.label(&e.fault); });
+                        row.col(|ui| {
+                            if ui.small_button("Speichern").clicked() {
+                                if let Some(store) = self.store.as_mut() {
+                                    if let Some(mut ent) = store.get_entry(&e.id).unwrap_or(None) {
+                                        if let Some(ns) = self.plan_status_edits.get(&e.id) { ent.status = ns.clone(); }
+                                        ent.updated_at = chrono::Local::now().naive_local();
+                                        let _ = store.update_entry(&ent);
+                                        let _ = store.log_event("Status geändert", &self.current_user, &format!("{} - {}", ent.plant, ent.fault), &ent.id);
+                                        self.status_msg = "Gespeichert".into();
+                                        self.reload();
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+            });
     }
 
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
