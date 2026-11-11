@@ -93,6 +93,7 @@ struct SchichtbuchApp {
     show_new_window: bool,
     show_edit_window: bool,
     edit_status: String,
+    edit_date: String,
     edit_time: String,
     edit_shift: String,
     edit_plant: String,
@@ -173,6 +174,7 @@ impl SchichtbuchApp {
             show_new_window: false,
             show_edit_window: false,
             edit_status: String::new(),
+            edit_date: String::new(),
             edit_time: String::new(),
             edit_shift: String::new(),
             edit_plant: String::new(),
@@ -244,7 +246,8 @@ impl SchichtbuchApp {
 
     fn load_edit(&mut self, e: &Entry) {
         self.selected_id = Some(e.id.clone());
-        self.edit_status = e.status.to_string();
+        self.edit_status = e.status.clone();
+        self.edit_date = e.date.to_string();
         self.edit_time = e.time.clone();
         self.edit_shift = e.shift.as_str().to_string();
         self.edit_plant = e.plant.clone();
@@ -514,7 +517,8 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
                             for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] { ui.selectable_value(&mut self.edit_status, s.to_string(), s); }
                         }); ui.end_row();
-                        ui.label("Uhrzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_time).desired_width(260.0)); ui.end_row();
+                        ui.label("Datum:"); ui.label(&self.edit_date); ui.end_row();
+                    ui.label("Uhrzeit:"); ui.label(&self.edit_time); ui.end_row();
                         ui.label("Schicht:"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
                             for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
                         }); ui.end_row();
