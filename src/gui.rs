@@ -423,8 +423,9 @@ impl eframe::App for SchichtbuchApp {
                     ui.horizontal(|ui| { ui.label("An wen übergeben?"); ui.text_edit_singleline(&mut self.edit_handed); });
                     ui.horizontal(|ui| { ui.label("Prio"); ui.text_edit_singleline(&mut self.edit_priority); });
                     ui.label("Maßnahme");
-                    ui.set_max_height(15.0 * 14.0);
-                    ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                    egui::ScrollArea::vertical().max_height(15.0 * 14.0).auto_shrink([false, false]).show(ui, |ui| {
+                        ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
+                    });
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
                     let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
