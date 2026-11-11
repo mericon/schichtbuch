@@ -28,50 +28,6 @@ impl Shift {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Status {
-    Offen,
-    StehtOffen,
-    Geplant,
-    InBearbeitung,
-    StehtInBearbeitung,
-    Erledigt,
-}
-
-impl Status {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Status::Offen => "offen",
-            Status::StehtOffen => "steht offen",
-            Status::Geplant => "geplant",
-            Status::InBearbeitung => "In Bearbeitung",
-            Status::StehtInBearbeitung => "steht in Bearbeitung",
-            Status::Erledigt => "erledigt",
-        }
-    }
-    pub fn from_str(s: &str) -> Self {
-        let l = s.to_lowercase();
-        if l.contains("erledigt") { Status::Erledigt }
-        else if l.contains("steht") && l.contains("offen") { Status::StehtOffen }
-        else if l.contains("geplant") { Status::Geplant }
-        else if l.contains("steht") { Status::StehtInBearbeitung }
-        else if l.contains("bearbeitung") { Status::InBearbeitung }
-        else if l.contains("offen") { Status::Offen }
-        else { Status::Offen }
-    }
-    pub fn is_done(&self) -> bool { matches!(self, Status::Erledigt) }
-    pub fn rgb(&self) -> (u8, u8, u8) {
-        match self {
-            Status::Offen => (255, 165, 0),
-            Status::StehtOffen => (220, 20, 60),
-            Status::Geplant => (186, 85, 211),
-            Status::InBearbeitung => (255, 215, 0),
-            Status::StehtInBearbeitung => (220, 20, 60),
-            Status::Erledigt => (34, 139, 34),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub id: String,
@@ -81,7 +37,7 @@ pub struct Entry {
     pub last_shift: Option<Shift>,
     pub last_editor: String,
     pub frozen: bool,
-    pub status: Status,
+    pub status: String,
     pub priority: Option<i32>,
     pub plant: String,
     pub sap_order: String,
@@ -109,7 +65,7 @@ impl Entry {
             last_shift: None,
             last_editor: String::new(),
             frozen: false,
-            status: Status::Offen,
+            status: "offen".to_string(),
             priority: None,
             plant: String::new(),
             sap_order: String::new(),
@@ -140,3 +96,18 @@ pub struct Handover {
     pub carried_count: i64,
 }
 
+
+pub fn status_is_done(name: &str) -> bool {
+    name.to_lowercase().contains("erledigt")
+}
+
+pub fn status_rgb(name: &str) -> (u8, u8, u8) {
+    let l = name.to_lowercase();
+    if l.contains("erledigt") { (34, 139, 34) }
+    else if l.contains("steht") && l.contains("offen") { (220, 20, 60) }
+    else if l.contains("steht") { (220, 20, 60) }
+    else if l.contains("geplant") { (186, 85, 211) }
+    else if l.contains("bearbeitung") { (255, 215, 0) }
+    else if l.contains("offen") { (255, 165, 0) }
+    else { (128, 128, 128) }
+}

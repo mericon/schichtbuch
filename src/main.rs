@@ -4,7 +4,7 @@ mod gui;
 mod import;
 mod storage;
 
-use crate::domain::{Entry, Shift, Status};
+use crate::domain::{Entry, Shift};
 use crate::storage::Store;
 use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
@@ -108,7 +108,7 @@ fn main() {
             let dd: NaiveDate = date.parse().expect("bad date");
             let mut e = Entry::new(dd, Shift::from_str(&shift));
             e.plant = plant;
-            if let Some(s) = status { e.status = Status::from_str(&s); }
+            if let Some(s) = status { e.status = s; }
             e.sap_order = sap.unwrap_or_default();
             e.fault = fault.unwrap_or_default();
             e.responsible = responsible.unwrap_or_default();
@@ -120,7 +120,7 @@ fn main() {
         Commands::UpdateStatus { db, id, status } => {
             let store = open(&db);
             if let Some(mut e) = store.get_entry(&id).expect("get failed") {
-                e.status = Status::from_str(&status);
+                e.status = status;
                 e.updated_at = chrono::Local::now().naive_local();
                 store.update_entry(&e).expect("update failed");
                 println!("updated {}", id);

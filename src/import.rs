@@ -1,4 +1,4 @@
-use crate::domain::{Entry, Shift, Status};
+use crate::domain::{Entry, Shift};
 use crate::storage::Store;
 use calamine::{open_workbook_auto, Data, Reader};
 use chrono::NaiveDate;
@@ -90,7 +90,7 @@ pub fn import_workbook(store: &Store, path: &Path) -> Result<usize, String> {
             let status_str = to_str(&cell(row, 1));
             if status_str.trim().is_empty() && to_str(&cell(row, 2)).trim().is_empty() { continue; }
             let mut e = Entry::new(date, Shift::Frueh);
-            e.status = Status::from_str(&status_str);
+            e.status = status_str.clone();
             e.plant = to_str(&cell(row, 2)).trim().to_string();
             e.sap_order = to_str(&cell(row, 3)).trim().to_string();
             e.fault = to_str(&cell(row, 4)).trim().to_string();
@@ -99,7 +99,7 @@ pub fn import_workbook(store: &Store, path: &Path) -> Result<usize, String> {
             e.downtime = to_str(&cell(row, 7)).trim().to_string();
             e.action = to_str(&cell(row, 8)).trim().to_string();
             e.images = to_str(&cell(row, 9)).trim().to_string();
-            e.archived = e.status.is_done();
+            e.archived = crate::domain::status_is_done(&e.status);
             e.created_by = "import".into();
             // shift unknown in Historie; default Früh. Try infer from? no.
             let _ = store.insert_entry(&e);
@@ -130,7 +130,7 @@ pub fn import_workbook(store: &Store, path: &Path) -> Result<usize, String> {
             }
             let mut e = Entry::new(date, Shift::Frueh);
             e.priority = prio.map(|p| p as i32);
-            e.status = Status::from_str(&status_str);
+            e.status = status_str.clone();
             e.plant = to_str(&cell(row, plant_idx)).trim().to_string();
             e.sap_order = to_str(&cell(row, plant_idx + 1)).trim().to_string();
             e.fault = to_str(&cell(row, plant_idx + 2)).trim().to_string();

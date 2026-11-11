@@ -1,4 +1,4 @@
-use crate::domain::{Entry, Shift, Status};
+use crate::domain::{Entry, Shift};
 use crate::storage::Store;
 use chrono::NaiveDate;
 use eframe::egui;
@@ -57,12 +57,18 @@ struct SchichtbuchApp {
     archive_results: Vec<Entry>,
     plants: Vec<String>,
     responsible: Vec<String>,
+    statuses: Vec<(String, i32)>,
     selected_plant: Option<String>,
     new_plant_name: String,
     rename_plant_name: String,
     selected_resp: Option<String>,
     new_resp_name: String,
     rename_resp_name: String,
+    new_status_name: String,
+    new_status_weight: String,
+    selected_status: Option<String>,
+    rename_status_name: String,
+    rename_status_weight: String,
     // new entry form
     new_date: String,
     new_time: String,
@@ -128,12 +134,18 @@ impl SchichtbuchApp {
             archive_results: vec![],
             plants: vec![],
             responsible: vec![],
+            statuses: vec![],
             selected_plant: None,
             new_plant_name: String::new(),
             rename_plant_name: String::new(),
             selected_resp: None,
             new_resp_name: String::new(),
             rename_resp_name: String::new(),
+            new_status_name: String::new(),
+            new_status_weight: String::new(),
+            selected_status: None,
+            rename_status_name: String::new(),
+            rename_status_weight: String::new(),
             new_date: today.clone(),
             new_time: chrono::Local::now().format("%H:%M").to_string(),
             new_shift: "Früh".into(),
@@ -176,6 +188,7 @@ impl SchichtbuchApp {
         let Some(store) = self.store.as_ref() else { return; };
         self.plants = store.list_plants().unwrap_or_default();
         self.responsible = store.list_responsible().unwrap_or_default();
+        self.statuses = store.list_statuses().unwrap_or_default();
         if self.current_user.is_empty() && !self.responsible.is_empty() {
             self.current_user = self.responsible[0].clone();
         }
@@ -214,7 +227,7 @@ impl SchichtbuchApp {
 
     fn load_edit(&mut self, e: &Entry) {
         self.selected_id = Some(e.id.clone());
-        self.edit_status = e.status.as_str().to_string();
+        self.edit_status = e.status.to_string();
         self.edit_time = e.time.clone();
         self.edit_shift = e.shift.as_str().to_string();
         self.edit_plant = e.plant.clone();
@@ -233,7 +246,7 @@ impl SchichtbuchApp {
         let Some(id) = self.selected_id.clone() else { return; };
         if let Some(e0) = store.get_entry(&id).unwrap_or(None) { if e0.frozen { self.status_msg = "Eintrag ist eingefroren und kann nicht bearbeitet werden".into(); return; } }
         if let Some(mut e) = store.get_entry(&id).unwrap_or(None) {
-            e.status = Status::from_str(&self.edit_status);
+            e.status = self.edit_status.clone();
             e.time = self.edit_time.clone();
             e.shift = Shift::from_str(&self.edit_shift);
             e.last_shift = Some(Shift::from_str(&self.filter_shift));
@@ -260,7 +273,7 @@ impl SchichtbuchApp {
         let date: NaiveDate = match self.new_date.parse() { Ok(d) => d, Err(_) => { self.status_msg="bad date".into(); return; } };
         let mut e = Entry::new(date, Shift::from_str(&self.new_shift));
         e.plant = self.new_plant.clone();
-        e.status = Status::from_str(&self.new_status);
+        e.status = self.new_status.clone();
         if self.new_time.trim().is_empty() { e.time = chrono::Local::now().format("%H:%M").to_string(); } else { e.time = self.new_time.clone(); }
         e.last_shift = Some(Shift::from_str(&self.new_shift));
         e.last_editor = self.current_user.clone();
@@ -376,7 +389,7 @@ impl eframe::App for SchichtbuchApp {
                                     ("Schicht:", e.shift.as_str().to_string()),
                                     ("Letzte Schicht:", e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()),
                                     ("Letzter Bearbeiter:", e.last_editor.clone()),
-                                    ("Status:", e.status.as_str().to_string()),
+                                    ("Status:", e.status.to_string()),
                                     ("Priorität:", e.priority.map(|p| p.to_string()).unwrap_or_default()),
                                     ("Anlage:", e.plant.clone()),
                                     ("SAP-Auftrag:", e.sap_order.clone()),
@@ -572,7 +585,7 @@ impl SchichtbuchApp {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.time); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| {
                             if !e.sap_order.is_empty() && ui.small_button(&e.sap_order).clicked() {
@@ -632,7 +645,7 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
                 }
@@ -669,7 +682,7 @@ impl SchichtbuchApp {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.plant); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(e.status.rgb().0, e.status.rgb().1, e.status.rgb().2), format!("{}{}", e.status.as_str(), if e.frozen { " ❄" } else { "" })); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), format!("{}{}", e.status, if e.frozen { " ❄" } else { "" })); });
                         row.col(|ui| { ui.label(&e.sap_order); });
                         row.col(|ui| { ui.label(&e.fault); });
                     });
@@ -798,6 +811,60 @@ impl SchichtbuchApp {
                         let _ = store.delete_responsible(&sel);
                         self.status_msg = "Verantwortlicher gelöscht".into();
                         self.selected_resp = None;
+                        self.reload();
+                    }
+                }
+            });
+        }
+
+        ui.separator();
+        ui.label("Stati (mit Gewichtung für Sortierung)");
+        egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+            for (name, w) in self.statuses.clone() {
+                if ui.selectable_label(self.selected_status.as_deref() == Some(&name), &format!("{} (Gewicht: {})", name, w)).clicked() {
+                    self.selected_status = Some(name.clone());
+                    self.rename_status_name = name.clone();
+                    self.rename_status_weight = w.to_string();
+                }
+            }
+        });
+        ui.horizontal(|ui| {
+            ui.label("Neu:");
+            ui.add(egui::TextEdit::singleline(&mut self.new_status_name).desired_width(120.0));
+            ui.label("Gewicht:");
+            ui.add(egui::TextEdit::singleline(&mut self.new_status_weight).desired_width(60.0));
+            if ui.button("Hinzufügen").clicked() && !self.new_status_name.trim().is_empty() {
+                if let Some(store) = self.store.as_mut() {
+                    let w: i32 = self.new_status_weight.trim().parse().unwrap_or(0);
+                    let _ = store.add_status(self.new_status_name.trim(), w);
+                    self.status_msg = "Status hinzugefügt".into();
+                    self.new_status_name.clear();
+                    self.new_status_weight.clear();
+                    self.reload();
+                }
+            }
+        });
+        if let Some(sel) = self.selected_status.clone() {
+            ui.horizontal(|ui| {
+                ui.label("Umbenennen:");
+                ui.add(egui::TextEdit::singleline(&mut self.rename_status_name).desired_width(120.0));
+                ui.label("Gewicht:");
+                ui.add(egui::TextEdit::singleline(&mut self.rename_status_weight).desired_width(60.0));
+                if ui.button("Speichern").clicked() && !self.rename_status_name.trim().is_empty() {
+                    if let Some(store) = self.store.as_mut() {
+                        let _ = store.rename_status(&sel, self.rename_status_name.trim());
+                        let w: i32 = self.rename_status_weight.trim().parse().unwrap_or(0);
+                        let _ = store.set_status_weight(self.rename_status_name.trim(), w);
+                        self.status_msg = "Status aktualisiert".into();
+                        self.selected_status = None;
+                        self.reload();
+                    }
+                }
+                if ui.button("Löschen").clicked() {
+                    if let Some(store) = self.store.as_mut() {
+                        let _ = store.delete_status(&sel);
+                        self.status_msg = "Status gelöscht".into();
+                        self.selected_status = None;
                         self.reload();
                     }
                 }

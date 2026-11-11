@@ -1,4 +1,4 @@
-use crate::domain::{Entry, Handover, Shift, Status};
+use crate::domain::{Entry, Handover, Shift};
 use chrono::NaiveDate;
 use rusqlite::{params, Connection, Result};
 use std::path::Path;
@@ -62,7 +62,7 @@ impl Store {
 
             CREATE TABLE IF NOT EXISTS master_plants (name TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS master_responsible (name TEXT PRIMARY KEY);
-            CREATE TABLE IF NOT EXISTS master_statuses (name TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS master_statuses (name TEXT PRIMARY KEY, weight INTEGER NOT NULL DEFAULT 0);
             CREATE TABLE IF NOT EXISTS master_shifts (name TEXT PRIMARY KEY);
 
             CREATE TABLE IF NOT EXISTS settings (
@@ -76,6 +76,15 @@ impl Store {
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN last_editor TEXT", []);
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN frozen INTEGER DEFAULT 0", []);
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN time TEXT DEFAULT ''", []);
+        let _ = self.conn.execute("ALTER TABLE master_statuses ADD COLUMN weight INTEGER NOT NULL DEFAULT 0", []);
+        // seed default statuses if empty
+        let cnt: i64 = self.conn.query_row("SELECT COUNT(*) FROM master_statuses", [], |r| r.get(0)).unwrap_or(0);
+        if cnt == 0 {
+            let defaults = [("offen",1),("steht offen",2),("geplant",3),("In Bearbeitung",4),("steht in Bearbeitung",5),("erledigt",6)];
+            for (n,w) in defaults {
+                let _ = self.conn.execute("INSERT OR IGNORE INTO master_statuses (name, weight) VALUES (?1, ?2)", rusqlite::params![n, w]);
+            }
+        }
         Ok(())
     }
 
@@ -329,6 +338,31 @@ impl Store {
         Ok(())
     }
 
+    pub fn list_statuses(&self) -> Result<Vec<(String, i32)>> {
+        let mut stmt = self.conn.prepare("SELECT name, weight FROM master_statuses ORDER BY weight ASC, name ASC")?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    pub fn add_status(&self, name: &str, weight: i32) -> Result<()> {
+        self.conn.execute("INSERT OR IGNORE INTO master_statuses (name, weight) VALUES (?1, ?2)", params![name, weight])?;
+        Ok(())
+    }
+    pub fn delete_status(&self, name: &str) -> Result<()> {
+        self.conn.execute("DELETE FROM master_statuses WHERE name=?1", params![name])?;
+        Ok(())
+    }
+    pub fn rename_status(&self, old: &str, new: &str) -> Result<()> {
+        self.conn.execute("UPDATE master_statuses SET name=?2 WHERE name=?1", params![old, new])?;
+        self.conn.execute("UPDATE entries SET status=?2 WHERE status=?1", params![old, new])?;
+        Ok(())
+    }
+    pub fn set_status_weight(&self, name: &str, weight: i32) -> Result<()> {
+        self.conn.execute("UPDATE master_statuses SET weight=?2 WHERE name=?1", params![name, weight])?;
+        Ok(())
+    }
+
     pub fn get_setting(&self, key: &str) -> Result<String> {
         self.conn.query_row("SELECT value FROM settings WHERE key=?1", params![key], |r| r.get(0))
             .or_else(|_| Ok(String::new()))
@@ -359,7 +393,7 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
         last_shift: last_shift.map(|s| Shift::from_str(&s)),
         last_editor,
         frozen: frozen != 0,
-        status: Status::from_str(&r.get::<_,String>(7)?),
+        status: r.get(7)?,
         priority: r.get(8)?,
         plant: r.get(9)?,
         sap_order: r.get(10)?,
