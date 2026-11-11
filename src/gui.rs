@@ -651,22 +651,22 @@ impl SchichtbuchApp {
             .body(|mut body| {
                 for e in self.aktuell_entries.clone() {
                     body.row(16.0, |mut row| {
-                        row.col(|ui| { ui.label(e.date.to_string()); });
-                        row.col(|ui| { ui.label(&e.time); });
-                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); });
-                        row.col(|ui| { ui.label(&e.plant); });
+                        row.col(|ui| { ui.label(e.date.to_string()); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.time); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.colored_label(egui::Color32::from_rgb(crate::domain::status_rgb(&e.status).0, crate::domain::status_rgb(&e.status).1, crate::domain::status_rgb(&e.status).2), e.status.clone()); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.plant); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
                         row.col(|ui| {
                             if !e.sap_order.is_empty() && ui.small_button(&e.sap_order).clicked() {
                                 ui.ctx().copy_text(e.sap_order.clone());
                                 copied_sap = e.sap_order.clone();
                             }
                         });
-                        row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
-                        row.col(|ui| { ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); });
-                        row.col(|ui| { ui.label(&e.last_editor); });
-                        row.col(|ui| { ui.label(&e.responsible); });
-                        row.col(|ui| { ui.label(&e.fault); });
-                        row.col(|ui| { ui.label(&e.action); });
+                        row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.last_editor); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.responsible); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.fault); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
+                        row.col(|ui| { ui.label(&e.action); ui.painter().vline(ui.max_rect().right(), ui.max_rect().y_range(), ui.visuals().widgets.noninteractive.bg_stroke); });
                         row.col(|ui| {
                             if ui.small_button("Bearb.").clicked() {
                                 clicked_id = Some(e.id.clone());
