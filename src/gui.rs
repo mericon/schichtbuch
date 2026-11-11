@@ -488,9 +488,8 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.new_priority).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.new_downtime).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Maßnahme:"); 
-                        egui::ScrollArea::vertical().max_height((ui.available_height() - 60.0).max(4.0 * 14.0)).auto_shrink([false, false]).show(ui, |ui| {
-                            ui.add(egui::TextEdit::multiline(&mut self.new_action).desired_rows(4).desired_width(f32::INFINITY));
-                        }); ui.end_row();
+                        let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
+                        ui.add_sized([f32::INFINITY, h], egui::TextEdit::multiline(&mut self.new_action).desired_rows(4)); ui.end_row();
                         ui.label("Bilder:");
                         let mut to_remove: Option<usize> = None;
                         let imgs: Vec<String> = self.new_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
@@ -553,9 +552,8 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
                     });
                     ui.label("Maßnahme");
-                    egui::ScrollArea::vertical().max_height((ui.available_height() - 60.0).max(4.0 * 14.0)).auto_shrink([false, false]).show(ui, |ui| {
-                        ui.add(egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4).desired_width(f32::INFINITY));
-                    });
+                    let h = (ui.available_height() - 60.0).max(4.0 * 14.0);
+                    ui.add_sized([f32::INFINITY, h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
                     ui.label("Bilder:");
                     let mut to_remove: Option<usize> = None;
                     let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
