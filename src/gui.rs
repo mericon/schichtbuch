@@ -697,12 +697,16 @@ impl eframe::App for SchichtbuchApp {
                         }); ui.end_row();
                         ui.label("Datum:"); ui.label(&self.edit_date); ui.end_row();
                     ui.label("Uhrzeit:"); ui.label(&self.edit_time); ui.end_row();
+                    if self.editing_wartung {
+                        ui.label("Bezeichnung:"); ui.label(&self.edit_plant); ui.end_row();
+                    } else {
                         ui.label("Schicht:"); egui::ComboBox::from_id_salt("edit_shift").selected_text(&self.edit_shift).show_ui(ui, |ui| {
                             for s in ["Früh","Spät","Nacht","Tag"] { ui.selectable_value(&mut self.edit_shift, s.to_string(), s); }
                         }); ui.end_row();
                         ui.label("Anlage:"); egui::ComboBox::from_id_salt("edit_plant").selected_text(if self.edit_plant.is_empty() {"(wählen)"} else {&self.edit_plant}).show_ui(ui, |ui| {
                             for p in &self.plants.clone() { ui.selectable_value(&mut self.edit_plant, p.clone(), p); }
                         }); ui.end_row();
+                    }
                         ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("edit_resp").selected_text(if self.edit_responsible.is_empty() {"(wählen)"} else {&self.edit_responsible}).show_ui(ui, |ui| {
                             for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
                         }); ui.end_row();
