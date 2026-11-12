@@ -60,6 +60,7 @@ struct SchichtbuchApp {
     plants: Vec<String>,
     responsible: Vec<String>,
     statuses: Vec<(String, i32)>,
+    gewerke: Vec<String>,
     selected_plant: Option<String>,
     new_plant_name: String,
     rename_plant_name: String,
@@ -84,6 +85,7 @@ struct SchichtbuchApp {
     new_sap: String,
     new_fault: String,
     new_responsible: String,
+    new_gewerk: String,
     new_priority: String,
     new_action: String,
     new_downtime: String,
@@ -103,6 +105,7 @@ struct SchichtbuchApp {
     edit_shift: String,
     edit_plant: String,
     edit_responsible: String,
+    edit_gewerk: String,
     edit_sap: String,
     edit_fault: String,
     edit_action: String,
@@ -148,6 +151,7 @@ impl SchichtbuchApp {
             plants: vec![],
             responsible: vec![],
             statuses: vec![],
+            gewerke: vec![],
             selected_plant: None,
             new_plant_name: String::new(),
             rename_plant_name: String::new(),
@@ -171,6 +175,7 @@ impl SchichtbuchApp {
             new_sap: String::new(),
             new_fault: String::new(),
             new_responsible: String::new(),
+            new_gewerk: String::new(),
             new_priority: String::new(),
             new_action: String::new(),
             new_downtime: String::new(),
@@ -189,6 +194,7 @@ impl SchichtbuchApp {
             edit_shift: String::new(),
             edit_plant: String::new(),
             edit_responsible: String::new(),
+            edit_gewerk: String::new(),
             edit_sap: String::new(),
             edit_fault: String::new(),
             edit_action: String::new(),
@@ -211,6 +217,7 @@ impl SchichtbuchApp {
         self.plants = store.list_plants().unwrap_or_default();
         self.responsible = store.list_responsible().unwrap_or_default();
         self.statuses = store.list_statuses().unwrap_or_default();
+        self.gewerke = store.list_gewerke().unwrap_or_default();
         if self.current_user.is_empty() && !self.responsible.is_empty() {
             self.current_user = self.responsible[0].clone();
         }
@@ -280,6 +287,7 @@ impl SchichtbuchApp {
         self.edit_shift = e.shift.as_str().to_string();
         self.edit_plant = e.plant.clone();
         self.edit_responsible = e.responsible.clone();
+        self.edit_gewerk = e.gewerk.clone();
         self.edit_sap = e.sap_order.clone();
         self.edit_fault = e.fault.clone();
         self.edit_action = e.action.clone();
@@ -300,6 +308,7 @@ impl SchichtbuchApp {
             e.last_editor = self.current_user.clone();
             e.plant = self.edit_plant.clone();
             e.responsible = self.edit_responsible.clone();
+            e.gewerk = self.edit_gewerk.clone();
             e.sap_order = self.edit_sap.clone();
             e.fault = self.edit_fault.clone();
             e.action = self.edit_action.clone();
@@ -327,6 +336,7 @@ impl SchichtbuchApp {
         e.sap_order = self.new_sap.clone();
         e.fault = self.new_fault.clone();
         e.responsible = self.new_responsible.clone();
+        e.gewerk = self.new_gewerk.clone();
         e.priority = self.new_priority.trim().parse().ok();
         e.action = self.new_action.clone();
         e.downtime = self.new_downtime.clone();
@@ -472,6 +482,7 @@ impl eframe::App for SchichtbuchApp {
                                     ("SAP-Auftrag:", e.sap_order.clone()),
                                     ("Störmeldung:", e.fault.clone()),
                                     ("Verantwortlich:", e.responsible.clone()),
+                                    ("Gewerk:", e.gewerk.clone()),
                                     ("An wen übergeben?", e.handed_over_to.clone()),
                                     ("Ausfallzeit:", e.downtime.clone()),
                                     ("Maßnahme:", e.action.clone()),
@@ -667,6 +678,7 @@ impl SchichtbuchApp {
             .column(Column::initial(60.0).resizable(true))
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(120.0).resizable(true))
+            .column(Column::initial(110.0).resizable(true))
             .column(Column::initial(160.0).resizable(true))
             .column(Column::remainder().resizable(true))
             .column(Column::initial(60.0).resizable(true))
@@ -680,6 +692,7 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Letzte Sch."); });
                 header.col(|ui| { ui.strong("Bearbeiter"); });
                 header.col(|ui| { ui.strong("Verantwortlich"); });
+                header.col(|ui| { ui.strong("Gewerk"); });
                 header.col(|ui| { ui.strong("Störmeldung"); });
                 header.col(|ui| { ui.strong("Maßnahme"); });
                 header.col(|ui| { ui.strong("Bearb."); });
@@ -701,6 +714,7 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(&e.last_editor); });
                         row.col(|ui| { ui.label(&e.responsible); });
+                        row.col(|ui| { ui.label(&e.gewerk); });
                         row.col(|ui| { ui.label(&e.fault); });
                         row.col(|ui| { ui.label(&e.action); });
                         row.col(|ui| {
