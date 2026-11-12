@@ -1183,7 +1183,7 @@ impl SchichtbuchApp {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         if ui.button("Neue Wartung").clicked() { self.show_wartung_window = true; }
         ui.separator();
-        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung).collect()).unwrap_or_default();
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung && e.status != "erledigt").collect()).unwrap_or_default();
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
