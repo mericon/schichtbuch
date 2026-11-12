@@ -710,25 +710,25 @@ impl SchichtbuchApp {
         ui.separator();
         let painter = ui.painter().clone();
         let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
             .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::initial(70.0).resizable(true))
+            .column(Column::initial(50.0).resizable(true))
             .column(Column::initial(80.0).resizable(true))
-            .column(Column::initial(60.0).resizable(true))
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(130.0).resizable(true))
-            .column(Column::initial(80.0).resizable(true))
-            .column(Column::initial(35.0).resizable(true))
-            .column(Column::initial(60.0).resizable(true))
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(120.0).resizable(true))
             .column(Column::initial(110.0).resizable(true))
-            .column(Column::initial(160.0).resizable(true))
+            .column(Column::initial(70.0).resizable(true))
+            .column(Column::initial(30.0).resizable(true))
+            .column(Column::initial(55.0).resizable(true))
+            .column(Column::initial(80.0).resizable(true))
+            .column(Column::initial(100.0).resizable(true))
+            .column(Column::initial(90.0).resizable(true))
+            .column(Column::initial(140.0).resizable(true))
             .column(Column::remainder().resizable(true))
-            .column(Column::initial(60.0).resizable(true))
+            .column(Column::initial(55.0).resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
                 header.col(|ui| { if ui.link("Uhrzeit").clicked() { if self.sort_column=="time" { self.sort_asc = !self.sort_asc; } else { self.sort_column="time".into(); self.sort_asc=true; } self.reload(); } });
@@ -805,15 +805,15 @@ impl SchichtbuchApp {
             });
             if ui.button("Suchen").clicked() { self.reload(); }
         });
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(150.0).resizable(true))
-            .column(Column::initial(110.0).resizable(true))
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(250.0).resizable(true))
+            .column(Column::initial(80.0).resizable(true))
+            .column(Column::initial(130.0).resizable(true))
+            .column(Column::initial(100.0).resizable(true))
+            .column(Column::initial(80.0).resizable(true))
+            .column(Column::initial(200.0).resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
                 header.col(|ui| { ui.strong("Anlage"); });
@@ -1056,19 +1056,19 @@ impl SchichtbuchApp {
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
             .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::initial(70.0).resizable(true))
+            .column(Column::initial(50.0).resizable(true))
             .column(Column::initial(80.0).resizable(true))
-            .column(Column::initial(60.0).resizable(true))
-            .column(Column::initial(90.0).resizable(true))
-            .column(Column::initial(130.0).resizable(true))
-            .column(Column::initial(60.0).resizable(true))
+            .column(Column::initial(110.0).resizable(true))
+            .column(Column::initial(50.0).resizable(true))
             .column(Column::remainder().resizable(true))
-            .column(Column::initial(60.0).resizable(true))
+            .column(Column::initial(55.0).resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
                 header.col(|ui| { ui.strong("Uhrzeit"); });
