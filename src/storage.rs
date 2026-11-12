@@ -443,7 +443,7 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
     let time_str: String = r.get(2)?;
     let last_shift: Option<String> = r.get(4)?;
     let last_editor: String = r.get(5)?;
-    let created: String = r.get(18)?;
+    let created: String = r.get(19)?;
     let updated: String = r.get(20)?;
     Ok(Entry {
         id: r.get(0)?,
