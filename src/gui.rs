@@ -406,6 +406,14 @@ impl eframe::App for SchichtbuchApp {
                 if ui.button("Einstellungen").clicked() { self.show_settings = true; }
                 if ui.button("Aktualisieren").clicked() { self.reload(); }
             });
+            if !self.status_msg.is_empty() || !self.current_user.is_empty() {
+                let mut txt = self.status_msg.clone();
+                if !self.current_user.is_empty() {
+                    if !txt.is_empty() { txt.push_str(" | "); }
+                    txt.push_str(&format!("Angemeldet als {}", self.current_user));
+                }
+                ui.label(txt);
+            }
             if !self.status_msg.is_empty() {
                 ui.label(&self.status_msg);
             }
