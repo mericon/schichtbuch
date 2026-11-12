@@ -909,7 +909,7 @@ impl SchichtbuchApp {
             ui.label("Stammdaten sind passwortgeschützt.");
             ui.horizontal(|ui| {
                 ui.label("Passwort:");
-                ui.add(egui::TextEdit::singleline(&mut self.stamm_password_input).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.stamm_password_input).desired_width(240.0));
                 if ui.button("Entsperren").clicked() {
                     let stored = self.store.as_ref().map(|st| st.get_setting("stammdaten_password").unwrap_or_default()).unwrap_or_default();
                     let stored = if stored.is_empty() { "0000".to_string() } else { stored };
@@ -931,7 +931,7 @@ impl SchichtbuchApp {
         if self.stamm_change_pw {
             ui.horizontal(|ui| {
                 ui.label("Neues Passwort:");
-                ui.add(egui::TextEdit::singleline(&mut self.stamm_new_password).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.stamm_new_password).desired_width(240.0));
                 if ui.button("Speichern").clicked() && !self.stamm_new_password.is_empty() {
                     if let Some(store) = self.store.as_ref() {
                         let _ = store.set_setting("stammdaten_password", &self.stamm_new_password);
@@ -954,7 +954,7 @@ impl SchichtbuchApp {
         });
         ui.horizontal(|ui| {
             ui.label("Neu:");
-            ui.add(egui::TextEdit::singleline(&mut self.new_plant_name).desired_width(f32::INFINITY));
+            ui.add(egui::TextEdit::singleline(&mut self.new_plant_name).desired_width(240.0));
             if ui.button("Hinzufügen").clicked() && !self.new_plant_name.trim().is_empty() {
                 if let Some(store) = self.store.as_mut() {
                     let _ = store.add_plant(self.new_plant_name.trim());
@@ -967,7 +967,7 @@ impl SchichtbuchApp {
         if let Some(sel) = self.selected_plant.clone() {
             ui.horizontal(|ui| {
                 ui.label("Umbenennen:");
-                ui.add(egui::TextEdit::singleline(&mut self.rename_plant_name).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.rename_plant_name).desired_width(240.0));
                 if ui.button("Speichern").clicked() && !self.rename_plant_name.trim().is_empty() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.rename_plant(&sel, self.rename_plant_name.trim());
@@ -1008,7 +1008,7 @@ impl SchichtbuchApp {
         });
         ui.horizontal(|ui| {
             ui.label("Neu:");
-            ui.add(egui::TextEdit::singleline(&mut self.new_resp_name).desired_width(f32::INFINITY));
+            ui.add(egui::TextEdit::singleline(&mut self.new_resp_name).desired_width(240.0));
             if ui.button("Hinzufügen").clicked() && !self.new_resp_name.trim().is_empty() {
                 if let Some(store) = self.store.as_mut() {
                     let _ = store.add_responsible(self.new_resp_name.trim());
@@ -1021,7 +1021,7 @@ impl SchichtbuchApp {
         if let Some(sel) = self.selected_resp.clone() {
             ui.horizontal(|ui| {
                 ui.label("Umbenennen:");
-                ui.add(egui::TextEdit::singleline(&mut self.rename_resp_name).desired_width(f32::INFINITY));
+                ui.add(egui::TextEdit::singleline(&mut self.rename_resp_name).desired_width(240.0));
                 if ui.button("Speichern").clicked() && !self.rename_resp_name.trim().is_empty() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.rename_responsible(&sel, self.rename_resp_name.trim());
@@ -1039,10 +1039,10 @@ impl SchichtbuchApp {
                     }
                 }
             });
-            ui.horizontal(|ui| { ui.label("Amain:"); ui.add(egui::TextEdit::singleline(&mut self.resp_amain).desired_width(f32::INFINITY)); });
-            ui.horizontal(|ui| { ui.label("Telefon:"); ui.add(egui::TextEdit::singleline(&mut self.resp_telefon).desired_width(f32::INFINITY)); });
-            ui.horizontal(|ui| { ui.label("Schicht (VK):"); ui.add(egui::TextEdit::singleline(&mut self.resp_schicht_vk).desired_width(f32::INFINITY)); });
-            ui.horizontal(|ui| { ui.label("Gewerk:"); ui.add(egui::TextEdit::singleline(&mut self.resp_gewerk).desired_width(f32::INFINITY)); });
+            ui.horizontal(|ui| { ui.label("Amain:"); ui.add(egui::TextEdit::singleline(&mut self.resp_amain).desired_width(240.0)); });
+            ui.horizontal(|ui| { ui.label("Telefon:"); ui.add(egui::TextEdit::singleline(&mut self.resp_telefon).desired_width(240.0)); });
+            ui.horizontal(|ui| { ui.label("Schicht (VK):"); ui.add(egui::TextEdit::singleline(&mut self.resp_schicht_vk).desired_width(240.0)); });
+            ui.horizontal(|ui| { ui.label("Gewerk:"); ui.add(egui::TextEdit::singleline(&mut self.resp_gewerk).desired_width(240.0)); });
             if ui.button("Details speichern").clicked() {
                 if let Some(store) = self.store.as_mut() {
                     let _ = store.update_responsible_details(&sel, &self.resp_amain, &self.resp_telefon, &self.resp_schicht_vk, &self.resp_gewerk);
