@@ -1,3 +1,6 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+static DEBUG: AtomicBool = AtomicBool::new(false);
+fn dbg(msg: &str) { if DEBUG.load(Ordering::Relaxed) { eprintln!("[DEBUG] {}", msg); } }
 use crate::domain::{Entry, Shift};
 use crate::storage::Store;
 use chrono::NaiveDate;
@@ -5,7 +8,7 @@ use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use std::path::PathBuf;
 
-pub fn run(db: PathBuf) {
+pub fn run(db: PathBuf, debug: bool) {
     let mut options = eframe::NativeOptions::default();
     options.viewport = options.viewport.with_maximized(true);
     let _ = eframe::run_native(
@@ -133,7 +136,9 @@ struct SchichtbuchApp {
 
 impl SchichtbuchApp {
     fn new(db: PathBuf) -> Self {
+        dbg(&format!("new: opening db {}", db.display()));
         let store = Store::open(&db).ok();
+        dbg(&format!("new: store is_some={}", store.is_some()));
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         Self {
             db_path: db.clone(),
@@ -410,6 +415,7 @@ impl eframe::App for SchichtbuchApp {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
                 if ui.button("Datenbank öffnen").clicked() {
+                    dbg("Datenbank öffnen clicked");
                     if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
                         self.status_msg = "Öffne...".into();
                         let p = path.clone();

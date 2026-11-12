@@ -13,6 +13,8 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "schichtbuch", version, about = "Schichtbuch - shift log")]
 struct Cli {
+    #[arg(long, global = true)]
+    debug: bool,
     #[command(subcommand)]
     cmd: Commands,
 }
@@ -60,6 +62,7 @@ fn open(db: &PathBuf) -> Store {
 
 fn main() {
     let cli = Cli::parse();
+    let debug = cli.debug;
     match cli.cmd {
         Commands::Init { db } => {
             let s = Store::open(&db).expect("init failed");
@@ -186,7 +189,7 @@ fn main() {
         Commands::Gui { db } => {
             let path = db.unwrap_or_else(|| PathBuf::from("schichtbuch.db"));
             if !path.exists() { let _ = Store::open(&path); }
-            gui::run(path);
+            gui::run(path, debug);
         }
     }
 }
