@@ -426,7 +426,7 @@ impl eframe::App for SchichtbuchApp {
                         self.db_path_str = path.to_string_lossy().to_string();
                         dbg("calling Store::open");
                         match Store::open(&p) {
-                            Ok(st) => { dbg("Store::open OK"); self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); dbg("reload done"); }
+                            Ok(st) => { dbg("Store::open OK"); dbg(&format!("plants in new store: {}", st.list_plants().unwrap_or_default().len())); self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); dbg("reload done"); }
                             Err(e) => { dbg(&format!("Store::open ERR: {}", e)); self.status_msg = format!("Fehler: {}", e); }
                         }
                     } else {
