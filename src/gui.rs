@@ -81,7 +81,7 @@ impl Schichtbuch {
     }
 
     fn view<'a>(&'a self) -> Element<'a, Message> {
-        let title = text("Schichtbuch").size(24);
+        let title = text("Schichtbuch (iced)").size(24);
         let mut col = column![title].spacing(10).padding(10);
 
         // new entry form
