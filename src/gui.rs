@@ -409,6 +409,21 @@ impl eframe::App for SchichtbuchApp {
         egui::Panel::top("top").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
+                ui.label("DB:");
+                ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(200.0));
+                if ui.button("Durchsuchen").clicked() {
+                    if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
+                        self.db_path_str = path.to_string_lossy().to_string();
+                    }
+                }
+                if ui.button("Öffnen").clicked() {
+                    self.status_msg = "Öffne...".into();
+                    let p = PathBuf::from(&self.db_path_str);
+                    match Store::open(&p) {
+                        Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
+                        Err(e) => self.status_msg = format!("Fehler: {}", e),
+                    }
+                }
                 if ui.button("Nutzerwechseln").clicked() { self.show_user_select = true; }
                 if ui.button("Einstellungen").clicked() { self.show_settings = true; }
                 if ui.button("Aktualisieren").clicked() { self.reload(); }
