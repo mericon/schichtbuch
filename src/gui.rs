@@ -141,8 +141,10 @@ impl SchichtbuchApp {
         let last = std::fs::read_to_string("schichtbuch.lastdb").ok().map(|x| x.trim().to_string()).filter(|x| !x.is_empty());
         let db = last.map(PathBuf::from).unwrap_or(db);
         dbg(&format!("new: opening db {}", db.display()));
-        let store = Store::open(&db).ok();
-        let store_is_some = store.is_some();
+        let existed = db.exists();
+        let store = if existed { Store::open(&db).ok() } else { None };
+        let store_is_some = store.is_some() && existed;
+        let has_users = store.as_ref().map(|s| !s.list_responsible().unwrap_or_default().is_empty()).unwrap_or(false);
         dbg(&format!("new: store is_some={}", store_is_some));
         let db_path_str = db.to_string_lossy().to_string();
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
@@ -213,7 +215,7 @@ impl SchichtbuchApp {
             editing_wartung: false,
             show_settings: false,
             show_wartung_window: false,
-            show_user_select: store_is_some,
+            show_user_select: has_users,
             edit_status: String::new(),
             edit_date: String::new(),
             edit_time: String::new(),
