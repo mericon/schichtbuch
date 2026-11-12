@@ -34,7 +34,7 @@ pub fn run(db: PathBuf) {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum Tab { Aktuell, Planbaustellen, Archiv, Ereignislog, Stammdaten, Uebergabe }
+enum Tab { Aktuell, Planbaustellen, Wartungen, Archiv, Ereignislog, Stammdaten, Uebergabe }
 
 struct SchichtbuchApp {
     db_path: PathBuf,
@@ -92,6 +92,7 @@ struct SchichtbuchApp {
     new_action: String,
     new_downtime: String,
     new_images: String,
+    new_kommentar: String,
     // edit
     selected_id: Option<String>,
     detail_id: Option<String>,
@@ -186,6 +187,7 @@ impl SchichtbuchApp {
             new_action: String::new(),
             new_downtime: String::new(),
             new_images: String::new(),
+            new_kommentar: String::new(),
             selected_id: None,
             detail_id: None,
             detail_user: None,
@@ -421,6 +423,7 @@ impl eframe::App for SchichtbuchApp {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
                 ui.selectable_value(&mut self.tab, Tab::Planbaustellen, "Planbaustellen");
+                ui.selectable_value(&mut self.tab, Tab::Wartungen, "Wartungen");
                 ui.selectable_value(&mut self.tab, Tab::Archiv, "Archiv");
                 ui.selectable_value(&mut self.tab, Tab::Ereignislog, "Ereignislog");
                 ui.selectable_value(&mut self.tab, Tab::Stammdaten, "Stammdaten");
@@ -430,6 +433,7 @@ impl eframe::App for SchichtbuchApp {
             match self.tab {
                 Tab::Aktuell => self.ui_aktuell(ui),
                 Tab::Planbaustellen => self.ui_planbaustellen(ui),
+                Tab::Wartungen => self.ui_wartungen(ui),
                 Tab::Archiv => self.ui_archiv(ui),
                 Tab::Ereignislog => self.ui_events(ui),
                 Tab::Stammdaten => self.ui_stamm(ui),
@@ -1120,6 +1124,93 @@ impl SchichtbuchApp {
                             self.edit_images = e.images.clone();
                             self.show_edit_window = true;
                         }
+                    });
+                }
+            });
+        ui.separator();
+        if !self.status_msg.is_empty() { ui.label(&self.status_msg); }
+    }
+
+    fn ui_wartungen(&mut self, ui: &mut egui::Ui) {
+        if ui.button("Aktualisieren").clicked() { self.reload(); }
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung).collect()).unwrap_or_default();
+        // New maintenance form
+        ui.label("Neue Wartung:");
+        ui.horizontal(|ui| {
+            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(100.0));
+            ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(120.0));
+            ui.label("Bezeichnung:"); ui.add(egui::TextEdit::singleline(&mut self.new_plant).desired_width(160.0));
+        });
+        ui.horizontal(|ui| {
+            ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("wart_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
+                for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
+            });
+            ui.label("Kommentar:"); ui.add(egui::TextEdit::singleline(&mut self.new_kommentar).desired_width(200.0));
+            if ui.button("Hinzufügen").clicked() {
+                if let Some(store) = self.store.as_mut() {
+                    let date = self.new_date.parse().unwrap_or_else(|_| chrono::Local::now().date_naive());
+                    let mut e = Entry::new(date, Shift::from_str("Früh"));
+                    e.wartung = true;
+                    e.sap_order = self.new_sap.clone();
+                    e.plant = self.new_plant.clone();
+                    e.responsible = self.new_responsible.clone();
+                    e.kommentar = self.new_kommentar.clone();
+                    e.status = "offen".to_string();
+                    e.last_editor = self.current_user.clone();
+                    let _ = store.insert_entry(&e);
+                    let _ = store.log_event("Neue Wartung", &self.current_user, &format!("{} - {}", e.plant, e.sap_order), &e.id);
+                    self.new_sap.clear();
+                    self.new_plant.clear();
+                    self.new_kommentar.clear();
+                    self.reload();
+                    self.status_msg = "Wartung hinzugefügt".into();
+                }
+            }
+        });
+        ui.separator();
+        TableBuilder::new(ui)
+            .striped(true)
+            .resizable(true)
+            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::initial(90.0).resizable(true))
+            .column(Column::initial(100.0).resizable(true))
+            .column(Column::initial(160.0).resizable(true))
+            .column(Column::initial(120.0).resizable(true))
+            .column(Column::initial(200.0).resizable(true))
+            .column(Column::initial(90.0).resizable(true))
+            .header(18.0, |mut header| {
+                header.col(|ui| { ui.strong("Datum"); });
+                header.col(|ui| { ui.strong("SAP"); });
+                header.col(|ui| { ui.strong("Bezeichnung"); });
+                header.col(|ui| { ui.strong("Verantwortlich"); });
+                header.col(|ui| { ui.strong("Kommentar"); });
+                header.col(|ui| { ui.strong("Erledigt"); });
+            })
+            .body(|mut body| {
+                for e in entries {
+                    body.row(16.0, |mut row| {
+                        row.col(|ui| { ui.label(e.date.to_string()); });
+                        row.col(|ui| { ui.label(&e.sap_order); });
+                        row.col(|ui| { ui.label(&e.plant); });
+                        row.col(|ui| { ui.label(&e.responsible); });
+                        row.col(|ui| { ui.label(&e.kommentar); });
+                        row.col(|ui| {
+                            let mut done = e.status == "erledigt";
+                            let label = if done { "Ja" } else { "Nein" };
+                            if ui.checkbox(&mut done, label).changed() {
+                                if let Some(store) = self.store.as_mut() {
+                                    if let Some(mut ent) = store.get_entry(&e.id).unwrap_or(None) {
+                                        ent.status = if done { "erledigt".to_string() } else { "offen".to_string() };
+                                        ent.updated_at = chrono::Local::now().naive_local();
+                                        let _ = store.update_entry(&ent);
+                                        if done {
+                                            let _ = store.log_event("Wartung erledigt", &self.current_user, &format!("{} - {}", ent.plant, ent.sap_order), &ent.id);
+                                        }
+                                        self.reload();
+                                    }
+                                }
+                            }
+                        });
                     });
                 }
             });
