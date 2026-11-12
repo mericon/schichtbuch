@@ -727,8 +727,8 @@ impl SchichtbuchApp {
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(80.0).resizable(true))
             .column(Column::initial(120.0).resizable(true))
-            .column(Column::remainder().resizable(true))
             .column(Column::initial(50.0).resizable(true))
+            .column(Column::remainder().resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
                 header.col(|ui| { if ui.link("Uhrzeit").clicked() { if self.sort_column=="time" { self.sort_asc = !self.sort_asc; } else { self.sort_column="time".into(); self.sort_asc=true; } self.reload(); } });
@@ -741,8 +741,8 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Verantwortlich"); });
                 header.col(|ui| { ui.strong("Gewerk"); });
                 header.col(|ui| { ui.strong("Störmeldung"); });
-                header.col(|ui| { ui.strong("Maßnahme"); });
                 header.col(|ui| { ui.strong("Bearb."); });
+                header.col(|ui| { ui.strong("Maßnahme"); });
             })
             .body(|mut body| {
                 for e in self.aktuell_entries.clone() {
@@ -768,12 +768,12 @@ impl SchichtbuchApp {
                             ui.label(g);
                         });
                         row.col(|ui| { ui.label(&e.fault); });
-                        row.col(|ui| { ui.label(&e.action); });
                         row.col(|ui| {
                             if ui.small_button("Bearb.").clicked() {
                                 clicked_id = Some(e.id.clone());
                             }
                         });
+                        row.col(|ui| { ui.label(&e.action); });
                         let resp = row.response();
                         painter.hline(resp.rect.x_range(), resp.rect.bottom(), stroke);
                         if resp.clicked() {
