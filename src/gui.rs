@@ -102,6 +102,7 @@ struct SchichtbuchApp {
     sort_asc: bool,
     show_new_window: bool,
     show_edit_window: bool,
+    editing_wartung: bool,
     show_settings: bool,
     show_wartung_window: bool,
     show_user_select: bool,
@@ -198,6 +199,7 @@ impl SchichtbuchApp {
             sort_asc: true,
             show_new_window: false,
             show_edit_window: false,
+            editing_wartung: false,
             show_settings: false,
             show_wartung_window: false,
             show_user_select: true,
@@ -687,7 +689,7 @@ impl eframe::App for SchichtbuchApp {
             if self.show_edit_window && self.selected_id.is_some() {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Eintrag bearbeiten").resizable(true).default_width(460.0).default_height(900.0).min_width(400.0).min_height(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                egui::Window::new(if self.editing_wartung { "Wartung bearbeiten" } else { "Eintrag bearbeiten" }).resizable(true).default_width(460.0).default_height(900.0).min_width(400.0).min_height(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
                     egui::Grid::new("edit_entry_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                         ui.label("Status:"); egui::ComboBox::from_id_salt("edit_status").selected_text(&self.edit_status).show_ui(ui, |ui| {
@@ -834,6 +836,7 @@ impl SchichtbuchApp {
                             // open edit window
                             if let Some(e2) = self.aktuell_entries.iter().find(|x| x.id == e.id).cloned() {
                                 self.load_edit(&e2);
+                                self.editing_wartung = false;
                                 self.show_edit_window = true;
                             }
                         }
@@ -1252,6 +1255,7 @@ impl SchichtbuchApp {
                                 self.edit_images = e2.images.clone();
                                 self.edit_kommentar = e2.kommentar.clone();
                                 self.show_edit_window = true;
+                                self.editing_wartung = true;
                             }
                         }
                     });
