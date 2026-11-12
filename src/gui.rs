@@ -707,35 +707,47 @@ impl eframe::App for SchichtbuchApp {
                             for r in &self.responsible.clone() { ui.selectable_value(&mut self.edit_responsible, r.clone(), r); }
                         }); ui.end_row();
                         ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.edit_sap).desired_width(f32::INFINITY)); ui.end_row();
+                        if !self.editing_wartung {
                         ui.label("Störmeldung:"); ui.add(egui::TextEdit::singleline(&mut self.edit_fault).desired_width(f32::INFINITY)); ui.end_row();
+                    }
+                        if !self.editing_wartung {
                         ui.label("Ausfallzeit:"); ui.add(egui::TextEdit::singleline(&mut self.edit_downtime).desired_width(f32::INFINITY)); ui.end_row();
+                    }
+                        if !self.editing_wartung {
                         ui.label("An wen übergeben?:"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(f32::INFINITY)); ui.end_row();
+                    }
+                        if !self.editing_wartung {
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
+                    }
                     });
                     ui.label("Kommentar:"); ui.add(egui::TextEdit::singleline(&mut self.edit_kommentar).desired_width(f32::INFINITY)); ui.end_row();
-                    ui.label("Maßnahme");
-                    let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
-                    ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
-                    ui.label("Bilder:");
-                    let mut to_remove: Option<usize> = None;
-                    let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
-                    for (i, img) in imgs.iter().enumerate() {
-                        ui.horizontal(|ui| {
-                            let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
-                            if ui.link(&name).clicked() { let _ = opener::open(img); }
-                            if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
-                        });
+                    if !self.editing_wartung {
+                        ui.label("Maßnahme");
+                        let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
+                        ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
                     }
-                    if let Some(i) = to_remove {
-                        let mut v: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
-                        if i < v.len() { v.remove(i); }
-                        self.edit_images = v.join(";");
-                    }
-                    if ui.button("Bilder anhängen").clicked() {
-                        if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
-                            for path in paths {
-                                if !self.edit_images.is_empty() { self.edit_images.push(';'); }
-                                self.edit_images.push_str(&path.to_string_lossy());
+                    if !self.editing_wartung {
+                        ui.label("Bilder:");
+                        let mut to_remove: Option<usize> = None;
+                        let imgs: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                        for (i, img) in imgs.iter().enumerate() {
+                            ui.horizontal(|ui| {
+                                let name = std::path::Path::new(img).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| img.clone());
+                                if ui.link(&name).clicked() { let _ = opener::open(img); }
+                                if ui.small_button("Löschen").clicked() { to_remove = Some(i); }
+                            });
+                        }
+                        if let Some(i) = to_remove {
+                            let mut v: Vec<String> = self.edit_images.split(';').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+                            if i < v.len() { v.remove(i); }
+                            self.edit_images = v.join(";");
+                        }
+                        if ui.button("Bilder anhängen").clicked() {
+                            if let Some(paths) = rfd::FileDialog::new().add_filter("Bilder", &["png","jpg","jpeg","bmp","gif"]).pick_files() {
+                                for path in paths {
+                                    if !self.edit_images.is_empty() { self.edit_images.push(';'); }
+                                    self.edit_images.push_str(&path.to_string_lossy());
+                                }
                             }
                         }
                     }
@@ -1241,6 +1253,7 @@ impl SchichtbuchApp {
                             if let Some(e2) = entries.iter().find(|x| x.id == e.id).cloned() {
                                 self.selected_id = Some(e2.id.clone());
                                 self.edit_status = e2.status.clone();
+                                self.edit_date = e2.date.to_string();
                                 self.edit_time = e2.time.clone();
                                 self.edit_shift = e2.shift.as_str().to_string();
                                 self.edit_plant = e2.plant.clone();
