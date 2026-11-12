@@ -486,6 +486,9 @@ impl eframe::App for SchichtbuchApp {
                                 Err(e) => self.status_msg = format!("Fehler: {}", e),
                             }
                         }
+                        if !self.status_msg.is_empty() {
+                            ui.label(&self.status_msg);
+                        }
                         ui.separator();
                         ui.label("Theme:");
                         if self.dark_mode {
