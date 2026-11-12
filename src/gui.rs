@@ -412,7 +412,7 @@ impl eframe::App for SchichtbuchApp {
             }
         });
 
-        egui::CentralPanel::default().frame(egui::Frame::default().fill(ui.visuals().panel_fill).inner_margin(egui::Margin::same(38))).show(ui, |ui| {
+        egui::CentralPanel::default().frame(egui::Frame::default().fill(ui.visuals().panel_fill).inner_margin(egui::Margin::same(19))).show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.tab, Tab::Aktuell, "Aktuell");
                 ui.selectable_value(&mut self.tab, Tab::Planbaustellen, "Planbaustellen");
@@ -710,7 +710,7 @@ impl SchichtbuchApp {
         ui.separator();
         let painter = ui.painter().clone();
         let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 189.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -805,7 +805,7 @@ impl SchichtbuchApp {
             });
             if ui.button("Suchen").clicked() { self.reload(); }
         });
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 189.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -1056,7 +1056,7 @@ impl SchichtbuchApp {
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
-        egui::ScrollArea::horizontal().max_width(ui.available_width() - 189.0).show(ui, |ui| {
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
