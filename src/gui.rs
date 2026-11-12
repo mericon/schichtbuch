@@ -402,10 +402,7 @@ impl eframe::App for SchichtbuchApp {
         egui::Panel::top("top").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
-                ui.label("Bearbeiter:");
-                egui::ComboBox::from_id_salt("user_sel").selected_text(if self.current_user.is_empty() {"(wählen)"} else {&self.current_user}).show_ui(ui, |ui| {
-                    for r in &self.responsible.clone() { ui.selectable_value(&mut self.current_user, r.clone(), r); }
-                });
+                if ui.button("Nutzerwechseln").clicked() { self.show_user_select = true; }
                 if ui.button("Einstellungen").clicked() { self.show_settings = true; }
                 if ui.button("Aktualisieren").clicked() { self.reload(); }
             });
