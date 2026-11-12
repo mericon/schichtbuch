@@ -710,7 +710,7 @@ impl SchichtbuchApp {
         ui.separator();
         let painter = ui.painter().clone();
         let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
-        egui::ScrollArea::horizontal().show(ui, |ui| {
+        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -797,7 +797,7 @@ impl SchichtbuchApp {
 
     fn ui_archiv(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(120.0));
+            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(240.0));
             ui.label("Anlage:");
             egui::ComboBox::from_id_salt("arch_plant").selected_text(if self.archive_filter_plant.is_empty() {"(alle)"} else {&self.archive_filter_plant}).show_ui(ui, |ui| {
                 if ui.selectable_value(&mut self.archive_filter_plant, String::new(), "(alle)").clicked() {}
@@ -805,7 +805,7 @@ impl SchichtbuchApp {
             });
             if ui.button("Suchen").clicked() { self.reload(); }
         });
-        egui::ScrollArea::horizontal().show(ui, |ui| {
+        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -1056,7 +1056,7 @@ impl SchichtbuchApp {
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
-        egui::ScrollArea::horizontal().show(ui, |ui| {
+        egui::ScrollArea::horizontal().max_width(ui.available_width() - 38.0).show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
