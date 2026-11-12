@@ -94,6 +94,7 @@ struct SchichtbuchApp {
     // edit
     selected_id: Option<String>,
     detail_id: Option<String>,
+    detail_user: Option<String>,
     plan_status_edits: std::collections::HashMap<String, String>,
     sort_column: String,
     sort_asc: bool,
@@ -184,6 +185,7 @@ impl SchichtbuchApp {
             new_images: String::new(),
             selected_id: None,
             detail_id: None,
+            detail_user: None,
             plan_status_edits: std::collections::HashMap::new(),
             sort_column: String::new(),
             sort_asc: true,
@@ -425,6 +427,29 @@ impl eframe::App for SchichtbuchApp {
                 Tab::Ereignislog => self.ui_events(ui),
                 Tab::Stammdaten => self.ui_stamm(ui),
                 Tab::Uebergabe => self.ui_uebergabe(ui),
+            }
+
+            // User details window
+            if let Some(uname) = self.detail_user.clone() {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                let user = self.responsible_full.iter().find(|u| u.name == uname).cloned();
+                egui::Window::new("Benutzer-Details").resizable(true).default_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
+                        if let Some(u) = &user {
+                            egui::Grid::new("user_detail").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
+                                ui.label("Name:"); ui.label(&u.name); ui.end_row();
+                                ui.label("Amain:"); ui.label(&u.amain); ui.end_row();
+                                ui.label("Telefon:"); ui.label(&u.telefon); ui.end_row();
+                                ui.label("Schicht (VK):"); ui.label(&u.schicht_vk); ui.end_row();
+                                ui.label("Gewerk:"); ui.label(&u.gewerk); ui.end_row();
+                            });
+                        } else {
+                            ui.label(format!("Benutzer '{}' nicht in Stammdaten gefunden.", uname));
+                        }
+                    });
+                });
+                if !open { self.detail_user = None; }
             }
 
             // Settings window
@@ -716,8 +741,8 @@ impl SchichtbuchApp {
                         });
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); });
-                        row.col(|ui| { ui.label(&e.last_editor); });
-                        row.col(|ui| { ui.label(&e.responsible); });
+                        row.col(|ui| { if ui.link(&e.last_editor).clicked() && !e.last_editor.is_empty() { self.detail_user = Some(e.last_editor.clone()); } });
+                        row.col(|ui| { if ui.link(&e.responsible).clicked() && !e.responsible.is_empty() { self.detail_user = Some(e.responsible.clone()); } });
                         row.col(|ui| {
                             let g = if e.gewerk.is_empty() {
                                 self.responsible_full.iter().find(|u| u.name == e.responsible).map(|u| u.gewerk.clone()).unwrap_or_default()
