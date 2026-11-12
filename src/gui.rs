@@ -1055,6 +1055,7 @@ impl SchichtbuchApp {
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(130.0).resizable(true))
             .column(Column::initial(50.0).resizable(true))
+            .column(Column::initial(160.0).resizable(true))
             .column(Column::remainder().resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
@@ -1063,6 +1064,7 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Anlage"); });
                 header.col(|ui| { ui.strong("Prio"); });
                 header.col(|ui| { ui.strong("Störmeldung"); });
+                header.col(|ui| { ui.strong("Maßnahme"); });
             })
             .body(|mut body| {
                 for e in entries {
@@ -1092,6 +1094,25 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(&e.fault); });
+                        row.col(|ui| { ui.label(&e.action); });
+                        let resp = row.response();
+                        if resp.clicked() {
+                            self.selected_id = Some(e.id.clone());
+                            self.edit_status = e.status.clone();
+                            self.edit_time = e.time.clone();
+                            self.edit_shift = e.shift.as_str().to_string();
+                            self.edit_plant = e.plant.clone();
+                            self.edit_responsible = e.responsible.clone();
+                            self.edit_gewerk = e.gewerk.clone();
+                            self.edit_sap = e.sap_order.clone();
+                            self.edit_fault = e.fault.clone();
+                            self.edit_action = e.action.clone();
+                            self.edit_priority = e.priority.map(|p| p.to_string()).unwrap_or_default();
+                            self.edit_downtime = e.downtime.clone();
+                            self.edit_handed = e.handed_over_to.clone();
+                            self.edit_images = e.images.clone();
+                            self.show_edit_window = true;
+                        }
                     });
                 }
             });
