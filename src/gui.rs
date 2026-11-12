@@ -103,6 +103,7 @@ struct SchichtbuchApp {
     show_new_window: bool,
     show_edit_window: bool,
     show_settings: bool,
+    show_wartung_window: bool,
     show_user_select: bool,
     edit_status: String,
     edit_date: String,
@@ -197,6 +198,7 @@ impl SchichtbuchApp {
             show_new_window: false,
             show_edit_window: false,
             show_settings: false,
+            show_wartung_window: false,
             show_user_select: true,
             edit_status: String::new(),
             edit_date: String::new(),
@@ -511,6 +513,52 @@ impl eframe::App for SchichtbuchApp {
                     });
                 });
                 if !open { self.show_user_select = false; }
+            }
+
+            // Wartung window
+            if self.show_wartung_window {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                egui::Window::new("Neue Wartung").resizable(true).default_width(460.0).default_height(320.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(120.0));
+                            ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(160.0));
+                            ui.label("Bezeichnung:"); ui.add(egui::TextEdit::singleline(&mut self.new_plant).desired_width(160.0));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("wart_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
+                                for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
+                            });
+                            ui.label("Kommentar:"); ui.add(egui::TextEdit::singleline(&mut self.new_kommentar).desired_width(200.0));
+                        });
+                        ui.horizontal(|ui| {
+                            if ui.button("Hinzufügen").clicked() {
+                                if let Some(store) = self.store.as_mut() {
+                                    let date = self.new_date.parse().unwrap_or_else(|_| chrono::Local::now().date_naive());
+                                    let mut e = Entry::new(date, Shift::from_str("Früh"));
+                                    e.wartung = true;
+                                    e.sap_order = self.new_sap.clone();
+                                    e.plant = self.new_plant.clone();
+                                    e.responsible = self.new_responsible.clone();
+                                    e.kommentar = self.new_kommentar.clone();
+                                    e.status = "offen".to_string();
+                                    e.last_editor = self.current_user.clone();
+                                    let _ = store.insert_entry(&e);
+                                    let _ = store.log_event("Neue Wartung", &self.current_user, &format!("{} - {}", e.plant, e.sap_order), &e.id);
+                                    self.new_sap.clear();
+                                    self.new_plant.clear();
+                                    self.new_kommentar.clear();
+                                    self.reload();
+                                    self.status_msg = "Wartung hinzugefügt".into();
+                                }
+                            }
+                            if ui.button("Schließen").clicked() { self.show_wartung_window = false; }
+                        });
+                        if !self.status_msg.is_empty() { ui.label(&self.status_msg); }
+                    });
+                });
+                if !open { self.show_wartung_window = false; }
             }
 
             // Detail window
@@ -1133,41 +1181,9 @@ impl SchichtbuchApp {
 
     fn ui_wartungen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
-        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung).collect()).unwrap_or_default();
-        // New maintenance form
-        ui.label("Neue Wartung:");
-        ui.horizontal(|ui| {
-            ui.label("Datum:"); ui.add(egui::TextEdit::singleline(&mut self.new_date).desired_width(100.0));
-            ui.label("SAP:"); ui.add(egui::TextEdit::singleline(&mut self.new_sap).desired_width(120.0));
-            ui.label("Bezeichnung:"); ui.add(egui::TextEdit::singleline(&mut self.new_plant).desired_width(160.0));
-        });
-        ui.horizontal(|ui| {
-            ui.label("Verantwortlich:"); egui::ComboBox::from_id_salt("wart_resp").selected_text(if self.new_responsible.is_empty() {"(wählen)"} else {&self.new_responsible}).show_ui(ui, |ui| {
-                for r in &self.responsible.clone() { ui.selectable_value(&mut self.new_responsible, r.clone(), r); }
-            });
-            ui.label("Kommentar:"); ui.add(egui::TextEdit::singleline(&mut self.new_kommentar).desired_width(200.0));
-            if ui.button("Hinzufügen").clicked() {
-                if let Some(store) = self.store.as_mut() {
-                    let date = self.new_date.parse().unwrap_or_else(|_| chrono::Local::now().date_naive());
-                    let mut e = Entry::new(date, Shift::from_str("Früh"));
-                    e.wartung = true;
-                    e.sap_order = self.new_sap.clone();
-                    e.plant = self.new_plant.clone();
-                    e.responsible = self.new_responsible.clone();
-                    e.kommentar = self.new_kommentar.clone();
-                    e.status = "offen".to_string();
-                    e.last_editor = self.current_user.clone();
-                    let _ = store.insert_entry(&e);
-                    let _ = store.log_event("Neue Wartung", &self.current_user, &format!("{} - {}", e.plant, e.sap_order), &e.id);
-                    self.new_sap.clear();
-                    self.new_plant.clear();
-                    self.new_kommentar.clear();
-                    self.reload();
-                    self.status_msg = "Wartung hinzugefügt".into();
-                }
-            }
-        });
+        if ui.button("Neue Wartung").clicked() { self.show_wartung_window = true; }
         ui.separator();
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung).collect()).unwrap_or_default();
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
