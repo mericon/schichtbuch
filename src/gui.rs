@@ -435,8 +435,7 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 let user = self.responsible_full.iter().find(|u| u.name == uname).cloned();
                 egui::Window::new("Benutzer-Details").resizable(true).auto_sized().scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
-                        if let Some(u) = &user {
+                    if let Some(u) = &user {
                             egui::Grid::new("user_detail").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                                 ui.label("Name:"); ui.label(&u.name); ui.end_row();
                                 ui.label("Amain:"); ui.label(&u.amain); ui.end_row();
@@ -447,7 +446,6 @@ impl eframe::App for SchichtbuchApp {
                         } else {
                             ui.label(format!("Benutzer '{}' nicht in Stammdaten gefunden.", uname));
                         }
-                    });
                 });
                 if !open { self.detail_user = None; }
             }
