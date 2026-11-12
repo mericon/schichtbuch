@@ -704,7 +704,6 @@ impl SchichtbuchApp {
         ui.separator();
 
         // Table
-        let mut detail_id: Option<String> = None;
         let mut copied_sap: String = String::new();
         ui.separator();
         let painter = ui.painter().clone();
@@ -775,16 +774,13 @@ impl SchichtbuchApp {
                             }
                         }
                         painter.hline(resp.rect.x_range(), resp.rect.bottom(), stroke);
-                        if resp.clicked() {
-                            detail_id = Some(e.id.clone());
-                        }
                     });
                 }
             });
         });
         ui.separator();
         if !copied_sap.is_empty() { self.status_msg = format!("SAP {} kopiert", copied_sap); }
-        if let Some(id) = detail_id { self.detail_id = Some(id); }
+
 
     }
 
