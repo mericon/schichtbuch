@@ -484,6 +484,7 @@ impl eframe::App for SchichtbuchApp {
                             }
                         }
                         if ui.button("Öffnen").clicked() {
+                            self.status_msg = "Öffne...".into();
                             let p = PathBuf::from(&self.db_path_str);
                             match Store::open(&p) {
                                 Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
