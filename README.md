@@ -1,7 +1,6 @@
 # Schichtbuch
 
-Digitales Schichtbuch als Ersatz für die Excel-Vorlage `Tagesbericht.xlsx`.
-Entwickelt in Rust, speichert in SQLite (Datei auf Netzlaufwerk) oder – über
+Digitales Schichtbuch. Entwickelt in Rust, speichert in SQLite (Datei auf Netzlaufwerk) oder – über
 die Storage-Abstraktion – in SharePoint-Listen.
 
 ## Anforderungen → Umsetzung
@@ -15,7 +14,6 @@ die Storage-Abstraktion – in SharePoint-Listen.
 | ~50.000 Einträge/Jahr | SQLite mit Indizes (`date,shift`, `archived`, `status`, `priority`); Suche über LIKE mit Index-Unterstützung. |
 | Schichten Früh/Spät/Nacht, 4-Schicht | Enum `Shift {Frueh, Spaet, Nacht, Tag}`. |
 | Erledigte Aufträge bei Übergabe archivieren, aber durchsuchbar | `archived`-Flag; `archive_completed()`; `search_archive()` (Volltext über Anlage, Störmeldung, Maßnahme, SAP, Verantwortlich). |
-| Vorlage Excel | Importer (`src/import.rs`, calamine) liest `Tagesbericht.xlsx`: Stammdaten + Historie + Prio offen. |
 
 ## Datenmodell
 
