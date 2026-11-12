@@ -797,7 +797,7 @@ impl SchichtbuchApp {
 
     fn ui_archiv(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(f32::INFINITY));
+            ui.label("Suche:"); ui.add(egui::TextEdit::singleline(&mut self.archive_query).desired_width(120.0));
             ui.label("Anlage:");
             egui::ComboBox::from_id_salt("arch_plant").selected_text(if self.archive_filter_plant.is_empty() {"(alle)"} else {&self.archive_filter_plant}).show_ui(ui, |ui| {
                 if ui.selectable_value(&mut self.archive_filter_plant, String::new(), "(alle)").clicked() {}
@@ -805,6 +805,7 @@ impl SchichtbuchApp {
             });
             if ui.button("Suchen").clicked() { self.reload(); }
         });
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -831,6 +832,7 @@ impl SchichtbuchApp {
                     });
                 }
             });
+        });
     }
 
     fn ui_stamm(&mut self, ui: &mut egui::Ui) {
@@ -1054,6 +1056,7 @@ impl SchichtbuchApp {
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -1108,6 +1111,7 @@ impl SchichtbuchApp {
                     });
                 }
             });
+        });
     }
 
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
