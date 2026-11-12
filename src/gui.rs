@@ -667,6 +667,7 @@ impl SchichtbuchApp {
         ui.separator();
         let painter = ui.painter().clone();
         let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
+        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -738,6 +739,7 @@ impl SchichtbuchApp {
                     });
                 }
             });
+        });
         ui.separator();
         if !copied_sap.is_empty() { self.status_msg = format!("SAP {} kopiert", copied_sap); }
         if let Some(id) = detail_id { self.detail_id = Some(id); }
