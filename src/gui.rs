@@ -101,6 +101,7 @@ struct SchichtbuchApp {
     show_new_window: bool,
     show_edit_window: bool,
     show_settings: bool,
+    show_user_select: bool,
     edit_status: String,
     edit_date: String,
     edit_time: String,
@@ -192,6 +193,7 @@ impl SchichtbuchApp {
             show_new_window: false,
             show_edit_window: false,
             show_settings: false,
+            show_user_select: true,
             edit_status: String::new(),
             edit_date: String::new(),
             edit_time: String::new(),
@@ -480,6 +482,24 @@ impl eframe::App for SchichtbuchApp {
                     });
                 });
                 if !open { self.show_settings = false; }
+            }
+
+            // User select popup at startup
+            if self.show_user_select {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                egui::Window::new("Benutzer auswählen").resizable(false).collapsible(false).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
+                        ui.label("Bitte wählen Sie den aktuellen Benutzer:");
+                        egui::ComboBox::from_id_salt("startup_user").selected_text(if self.current_user.is_empty() {"(wählen)"} else {&self.current_user}).show_ui(ui, |ui| {
+                            for r in &self.responsible.clone() { ui.selectable_value(&mut self.current_user, r.clone(), r); }
+                        });
+                        if ui.button("OK").clicked() && !self.current_user.is_empty() {
+                            self.show_user_select = false;
+                        }
+                    });
+                });
+                if !open { self.show_user_select = false; }
             }
 
             // Detail window
