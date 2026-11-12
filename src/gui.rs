@@ -472,6 +472,10 @@ impl eframe::App for SchichtbuchApp {
                 let mut open = true;
                 egui::Window::new("Einstellungen").resizable(true).default_width(460.0).default_height(320.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
                     egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
+                        if !self.status_msg.is_empty() {
+                            ui.label(&self.status_msg);
+                            ui.separator();
+                        }
                         ui.label("Datenbank:");
                         ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
                         if ui.button("Durchsuchen").clicked() {
@@ -485,9 +489,6 @@ impl eframe::App for SchichtbuchApp {
                                 Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
                                 Err(e) => self.status_msg = format!("Fehler: {}", e),
                             }
-                        }
-                        if !self.status_msg.is_empty() {
-                            ui.label(&self.status_msg);
                         }
                         ui.separator();
                         ui.label("Theme:");
