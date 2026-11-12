@@ -470,35 +470,33 @@ impl eframe::App for SchichtbuchApp {
             if self.show_settings {
                 let ctx = ui.ctx().clone();
                 let mut open = true;
-                egui::Window::new("Einstellungen").resizable(true).default_width(460.0).default_height(320.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
-                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
-                        if !self.status_msg.is_empty() {
-                            ui.label(&self.status_msg);
-                            ui.separator();
-                        }
-                        ui.label("Datenbank:");
-                        ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
-                        if ui.button("Durchsuchen").clicked() {
-                            if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
-                                self.db_path_str = path.to_string_lossy().to_string();
-                            }
-                        }
-                        if ui.button("Öffnen").clicked() {
-                            self.status_msg = "Öffne...".into();
-                            let p = PathBuf::from(&self.db_path_str);
-                            match Store::open(&p) {
-                                Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
-                                Err(e) => self.status_msg = format!("Fehler: {}", e),
-                            }
-                        }
+                egui::Window::new("Einstellungen").resizable(true).default_width(460.0).default_height(320.0).min_width(400.0).open(&mut open).show(&ctx, |ui| {
+                    if !self.status_msg.is_empty() {
+                        ui.label(&self.status_msg);
                         ui.separator();
-                        ui.label("Theme:");
-                        if self.dark_mode {
-                            if ui.button("☀ Auf helles Theme wechseln").clicked() { self.dark_mode = false; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","light");} }
-                        } else {
-                            if ui.button("🌙 Auf dunkles Theme wechseln").clicked() { self.dark_mode = true; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","dark");} }
+                    }
+                    ui.label("Datenbank:");
+                    ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
+                    if ui.button("Durchsuchen").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
+                            self.db_path_str = path.to_string_lossy().to_string();
                         }
-                    });
+                    }
+                    if ui.button("Öffnen").clicked() {
+                        self.status_msg = "Öffne...".into();
+                        let p = PathBuf::from(&self.db_path_str);
+                        match Store::open(&p) {
+                            Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
+                            Err(e) => self.status_msg = format!("Fehler: {}", e),
+                        }
+                    }
+                    ui.separator();
+                    ui.label("Theme:");
+                    if self.dark_mode {
+                        if ui.button("☀ Auf helles Theme wechseln").clicked() { self.dark_mode = false; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","light");} }
+                    } else {
+                        if ui.button("🌙 Auf dunkles Theme wechseln").clicked() { self.dark_mode = true; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","dark");} }
+                    }
                 });
                 if !open { self.show_settings = false; }
             }
