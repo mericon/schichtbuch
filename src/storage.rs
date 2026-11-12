@@ -61,7 +61,7 @@ impl Store {
             );
 
             CREATE TABLE IF NOT EXISTS master_plants (name TEXT PRIMARY KEY);
-            CREATE TABLE IF NOT EXISTS master_responsible (name TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS master_responsible (name TEXT PRIMARY KEY, amain TEXT NOT NULL DEFAULT '', telefon TEXT NOT NULL DEFAULT '', schicht_vk TEXT NOT NULL DEFAULT '', gewerk TEXT NOT NULL DEFAULT '');
             CREATE TABLE IF NOT EXISTS master_statuses (name TEXT PRIMARY KEY, weight INTEGER NOT NULL DEFAULT 0);
             CREATE TABLE IF NOT EXISTS master_shifts (name TEXT PRIMARY KEY);
 
@@ -85,6 +85,10 @@ impl Store {
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN last_editor TEXT", []);
         let _ = self.conn.execute("ALTER TABLE entries ADD COLUMN time TEXT DEFAULT ''", []);
         let _ = self.conn.execute("ALTER TABLE master_statuses ADD COLUMN weight INTEGER NOT NULL DEFAULT 0", []);
+        let _ = self.conn.execute("ALTER TABLE master_responsible ADD COLUMN amain TEXT NOT NULL DEFAULT ''", []);
+        let _ = self.conn.execute("ALTER TABLE master_responsible ADD COLUMN telefon TEXT NOT NULL DEFAULT ''", []);
+        let _ = self.conn.execute("ALTER TABLE master_responsible ADD COLUMN schicht_vk TEXT NOT NULL DEFAULT ''", []);
+        let _ = self.conn.execute("ALTER TABLE master_responsible ADD COLUMN gewerk TEXT NOT NULL DEFAULT ''", []);
         let _ = self.conn.execute("ALTER TABLE handovers ADD COLUMN taken_over_by TEXT NOT NULL DEFAULT ''", []);
         // seed default statuses if empty
         let cnt: i64 = self.conn.query_row("SELECT COUNT(*) FROM master_statuses", [], |r| r.get(0)).unwrap_or(0);
@@ -304,6 +308,26 @@ impl Store {
         let mut out = Vec::new();
         for r in rows { out.push(r?); }
         Ok(out)
+    }
+
+    pub fn list_responsible_full(&self) -> Result<Vec<crate::domain::Responsible>> {
+        let mut stmt = self.conn.prepare("SELECT name, amain, telefon, schicht_vk, gewerk FROM master_responsible ORDER BY name")?;
+        let rows = stmt.query_map([], |r| {
+            Ok(crate::domain::Responsible {
+                name: r.get(0)?,
+                amain: r.get(1)?,
+                telefon: r.get(2)?,
+                schicht_vk: r.get(3)?,
+                gewerk: r.get(4)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    pub fn update_responsible_details(&self, name: &str, amain: &str, telefon: &str, schicht_vk: &str, gewerk: &str) -> Result<()> {
+        self.conn.execute("UPDATE master_responsible SET amain=?2, telefon=?3, schicht_vk=?4, gewerk=?5 WHERE name=?1", params![name, amain, telefon, schicht_vk, gewerk])?;
+        Ok(())
     }
 
     pub fn delete_plant(&self, name: &str) -> Result<()> {

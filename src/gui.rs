@@ -66,6 +66,10 @@ struct SchichtbuchApp {
     selected_resp: Option<String>,
     new_resp_name: String,
     rename_resp_name: String,
+    resp_amain: String,
+    resp_telefon: String,
+    resp_schicht_vk: String,
+    resp_gewerk: String,
     new_status_name: String,
     new_status_weight: String,
     selected_status: Option<String>,
@@ -150,6 +154,10 @@ impl SchichtbuchApp {
             selected_resp: None,
             new_resp_name: String::new(),
             rename_resp_name: String::new(),
+            resp_amain: String::new(),
+            resp_telefon: String::new(),
+            resp_schicht_vk: String::new(),
+            resp_gewerk: String::new(),
             new_status_name: String::new(),
             new_status_weight: String::new(),
             selected_status: None,
@@ -841,12 +849,22 @@ impl SchichtbuchApp {
             });
         }
         ui.separator();
-        ui.label("Verantwortliche");
+        ui.label("Benutzer");
         egui::ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             for r in self.responsible.clone() {
                 if ui.selectable_label(self.selected_resp.as_deref() == Some(&r), &r).clicked() {
                     self.selected_resp = Some(r.clone());
                     self.rename_resp_name = r.clone();
+                    if let Some(store) = self.store.as_ref() {
+                        if let Ok(full) = store.list_responsible_full() {
+                            if let Some(u) = full.iter().find(|x| x.name == r) {
+                                self.resp_amain = u.amain.clone();
+                                self.resp_telefon = u.telefon.clone();
+                                self.resp_schicht_vk = u.schicht_vk.clone();
+                                self.resp_gewerk = u.gewerk.clone();
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -869,7 +887,7 @@ impl SchichtbuchApp {
                 if ui.button("Speichern").clicked() && !self.rename_resp_name.trim().is_empty() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.rename_responsible(&sel, self.rename_resp_name.trim());
-                        self.status_msg = "Verantwortlicher umbenannt".into();
+                        self.status_msg = "Benutzer umbenannt".into();
                         self.selected_resp = None;
                         self.reload();
                     }
@@ -877,12 +895,22 @@ impl SchichtbuchApp {
                 if ui.button("Löschen").clicked() {
                     if let Some(store) = self.store.as_mut() {
                         let _ = store.delete_responsible(&sel);
-                        self.status_msg = "Verantwortlicher gelöscht".into();
+                        self.status_msg = "Benutzer gelöscht".into();
                         self.selected_resp = None;
                         self.reload();
                     }
                 }
             });
+            ui.horizontal(|ui| { ui.label("Amain:"); ui.add(egui::TextEdit::singleline(&mut self.resp_amain).desired_width(f32::INFINITY)); });
+            ui.horizontal(|ui| { ui.label("Telefon:"); ui.add(egui::TextEdit::singleline(&mut self.resp_telefon).desired_width(f32::INFINITY)); });
+            ui.horizontal(|ui| { ui.label("Schicht (VK):"); ui.add(egui::TextEdit::singleline(&mut self.resp_schicht_vk).desired_width(f32::INFINITY)); });
+            ui.horizontal(|ui| { ui.label("Gewerk:"); ui.add(egui::TextEdit::singleline(&mut self.resp_gewerk).desired_width(f32::INFINITY)); });
+            if ui.button("Details speichern").clicked() {
+                if let Some(store) = self.store.as_mut() {
+                    let _ = store.update_responsible_details(&sel, &self.resp_amain, &self.resp_telefon, &self.resp_schicht_vk, &self.resp_gewerk);
+                    self.status_msg = "Details gespeichert".into();
+                }
+            }
         }
 
         ui.separator();

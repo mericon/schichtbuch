@@ -120,3 +120,12 @@ pub struct Event {
     pub details: String,
     pub related_id: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Responsible {
+    pub name: String,
+    pub amain: String,
+    pub telefon: String,
+    pub schicht_vk: String,
+    pub gewerk: String,
+}
