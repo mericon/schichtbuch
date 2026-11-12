@@ -111,7 +111,7 @@ impl Store {
     pub fn insert_entry(&self, e: &Entry) -> Result<()> {
         self.conn.execute(
             r#"INSERT INTO entries (id,date,time,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,gewerk,wartung,kommentar,handed_over_to,downtime,action,images,transferred,archived,created_at,updated_at,created_by)
-               VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)"#,
+               VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24)"#,
             params![
                 e.id,
                 e.date.to_string(),
@@ -126,6 +126,8 @@ impl Store {
                 e.fault,
                 e.responsible,
                 e.gewerk,
+                e.wartung as i32,
+                e.kommentar.clone(),
                 e.handed_over_to,
                 e.downtime,
                 e.action,
@@ -478,3 +480,4 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
         created_by: r.get(23)?,
     })
 }
+
