@@ -138,13 +138,17 @@ struct SchichtbuchApp {
 
 impl SchichtbuchApp {
     fn new(db: PathBuf) -> Self {
+        let last = std::fs::read_to_string("schichtbuch.lastdb").ok().map(|x| x.trim().to_string()).filter(|x| !x.is_empty());
+        let db = last.map(PathBuf::from).unwrap_or(db);
         dbg(&format!("new: opening db {}", db.display()));
         let store = Store::open(&db).ok();
-        dbg(&format!("new: store is_some={}", store.is_some()));
+        let store_is_some = store.is_some();
+        dbg(&format!("new: store is_some={}", store_is_some));
+        let db_path_str = db.to_string_lossy().to_string();
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         Self {
             db_path: db.clone(),
-            db_path_str: db.to_string_lossy().to_string(),
+            db_path_str: db_path_str,
             current_user: String::new(),
             user_selected: false,
             dark_mode: true,
@@ -209,7 +213,7 @@ impl SchichtbuchApp {
             editing_wartung: false,
             show_settings: false,
             show_wartung_window: false,
-            show_user_select: true,
+            show_user_select: store_is_some,
             edit_status: String::new(),
             edit_date: String::new(),
             edit_time: String::new(),
@@ -431,7 +435,7 @@ impl eframe::App for SchichtbuchApp {
                             self.status_msg = "Öffne...".into();
                             dbg("calling Store::open");
                             match Store::open(&p) {
-                                Ok(st) => { dbg("Store::open OK"); dbg(&format!("plants in new store: {}", st.list_plants().unwrap_or_default().len())); self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); dbg("reload done"); }
+                                Ok(st) => { dbg("Store::open OK"); dbg(&format!("plants in new store: {}", st.list_plants().unwrap_or_default().len())); self.store = Some(st); self.db_path = p.clone(); self.status_msg = "Datenbank geöffnet".into(); let _ = std::fs::write("schichtbuch.lastdb", p.to_string_lossy().as_ref()); self.show_user_select = true; self.reload(); dbg("reload done"); }
                                 Err(e) => { dbg(&format!("Store::open ERR: {}", e)); self.status_msg = format!("Fehler: {}", e); }
                             }
                         }
