@@ -465,7 +465,7 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
         fault: r.get(10)?,
         responsible: r.get(11)?,
         gewerk: r.get(12)?,
-        wartung: r.get::<_,i32>(13)? != 0,
+        wartung: r.get::<_,Option<i32>>(13).unwrap_or(Some(0)).unwrap_or(0) != 0,
         kommentar: r.get(14)?,
         handed_over_to: r.get(15)?,
         downtime: r.get(16)?,
