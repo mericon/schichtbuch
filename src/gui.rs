@@ -118,6 +118,7 @@ struct SchichtbuchApp {
     edit_priority: String,
     edit_downtime: String,
     edit_handed: String,
+    edit_kommentar: String,
     edit_images: String,
     // handover
     ho_user: String,
@@ -213,6 +214,7 @@ impl SchichtbuchApp {
             edit_priority: String::new(),
             edit_downtime: String::new(),
             edit_handed: String::new(),
+            edit_kommentar: String::new(),
             edit_images: String::new(),
             ho_user: String::new(),
             ho_taken_by: String::new(),
@@ -307,6 +309,7 @@ impl SchichtbuchApp {
         self.edit_priority = e.priority.map(|p| p.to_string()).unwrap_or_default();
         self.edit_downtime = e.downtime.clone();
         self.edit_handed = e.handed_over_to.clone();
+        self.edit_kommentar = e.kommentar.clone();
         self.edit_images = e.images.clone();
     }
 
@@ -328,6 +331,7 @@ impl SchichtbuchApp {
             e.priority = self.edit_priority.trim().parse().ok();
             e.downtime = self.edit_downtime.clone();
             e.handed_over_to = self.edit_handed.clone();
+            e.kommentar = self.edit_kommentar.clone();
             e.images = self.edit_images.clone();
             e.updated_at = chrono::Local::now().naive_local();
             match store.update_entry(&e) {
@@ -706,6 +710,7 @@ impl eframe::App for SchichtbuchApp {
                         ui.label("An wen übergeben?:"); ui.add(egui::TextEdit::singleline(&mut self.edit_handed).desired_width(f32::INFINITY)); ui.end_row();
                         ui.label("Prio:"); ui.add(egui::TextEdit::singleline(&mut self.edit_priority).desired_width(f32::INFINITY)); ui.end_row();
                     });
+                    ui.label("Kommentar:"); ui.add(egui::TextEdit::singleline(&mut self.edit_kommentar).desired_width(f32::INFINITY)); ui.end_row();
                     ui.label("Maßnahme");
                     let h = (ui.available_height() - 120.0).max(4.0 * 14.0);
                     ui.add_sized([ui.available_width(), h], egui::TextEdit::multiline(&mut self.edit_action).desired_rows(4));
@@ -1126,7 +1131,7 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Maßnahme"); });
             })
             .body(|mut body| {
-                for e in entries {
+                for e in entries.clone() {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.time); });
@@ -1187,6 +1192,7 @@ impl SchichtbuchApp {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
+            .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(100.0).resizable(true))
@@ -1203,7 +1209,7 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Erledigt"); });
             })
             .body(|mut body| {
-                for e in entries {
+                for e in entries.clone() {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.sap_order); });
@@ -1227,6 +1233,27 @@ impl SchichtbuchApp {
                                 }
                             }
                         });
+                        let resp = row.response();
+                        if resp.clicked() {
+                            if let Some(e2) = entries.iter().find(|x| x.id == e.id).cloned() {
+                                self.selected_id = Some(e2.id.clone());
+                                self.edit_status = e2.status.clone();
+                                self.edit_time = e2.time.clone();
+                                self.edit_shift = e2.shift.as_str().to_string();
+                                self.edit_plant = e2.plant.clone();
+                                self.edit_responsible = e2.responsible.clone();
+                                self.edit_gewerk = e2.gewerk.clone();
+                                self.edit_sap = e2.sap_order.clone();
+                                self.edit_fault = e2.fault.clone();
+                                self.edit_action = e2.action.clone();
+                                self.edit_priority = e2.priority.map(|p| p.to_string()).unwrap_or_default();
+                                self.edit_downtime = e2.downtime.clone();
+                                self.edit_handed = e2.handed_over_to.clone();
+                                self.edit_images = e2.images.clone();
+                                self.edit_kommentar = e2.kommentar.clone();
+                                self.show_edit_window = true;
+                            }
+                        }
                     });
                 }
             });
