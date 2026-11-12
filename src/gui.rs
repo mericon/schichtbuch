@@ -59,6 +59,7 @@ struct SchichtbuchApp {
     events: Vec<crate::domain::Event>,
     plants: Vec<String>,
     responsible: Vec<String>,
+    responsible_full: Vec<crate::domain::Responsible>,
     statuses: Vec<(String, i32)>,
     gewerke: Vec<String>,
     selected_plant: Option<String>,
@@ -150,6 +151,7 @@ impl SchichtbuchApp {
             events: vec![],
             plants: vec![],
             responsible: vec![],
+            responsible_full: vec![],
             statuses: vec![],
             gewerke: vec![],
             selected_plant: None,
@@ -216,6 +218,7 @@ impl SchichtbuchApp {
         let Some(store) = self.store.as_ref() else { return; };
         self.plants = store.list_plants().unwrap_or_default();
         self.responsible = store.list_responsible().unwrap_or_default();
+        self.responsible_full = store.list_responsible_full().unwrap_or_default();
         self.statuses = store.list_statuses().unwrap_or_default();
         self.gewerke = store.list_gewerke().unwrap_or_default();
         if self.current_user.is_empty() && !self.responsible.is_empty() {
@@ -482,7 +485,7 @@ impl eframe::App for SchichtbuchApp {
                                     ("SAP-Auftrag:", e.sap_order.clone()),
                                     ("Störmeldung:", e.fault.clone()),
                                     ("Verantwortlich:", e.responsible.clone()),
-                                    ("Gewerk:", e.gewerk.clone()),
+                                    ("Gewerk:", if e.gewerk.is_empty() { self.responsible_full.iter().find(|u| u.name == e.responsible).map(|u| u.gewerk.clone()).unwrap_or_default() } else { e.gewerk.clone() }),
                                     ("An wen übergeben?", e.handed_over_to.clone()),
                                     ("Ausfallzeit:", e.downtime.clone()),
                                     ("Maßnahme:", e.action.clone()),
@@ -714,7 +717,12 @@ impl SchichtbuchApp {
                         row.col(|ui| { ui.label(e.last_shift.map(|s| s.as_str().to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(&e.last_editor); });
                         row.col(|ui| { ui.label(&e.responsible); });
-                        row.col(|ui| { ui.label(&e.gewerk); });
+                        row.col(|ui| {
+                            let g = if e.gewerk.is_empty() {
+                                self.responsible_full.iter().find(|u| u.name == e.responsible).map(|u| u.gewerk.clone()).unwrap_or_default()
+                            } else { e.gewerk.clone() };
+                            ui.label(g);
+                        });
                         row.col(|ui| { ui.label(&e.fault); });
                         row.col(|ui| { ui.label(&e.action); });
                         row.col(|ui| {
