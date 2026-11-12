@@ -92,6 +92,7 @@ struct SchichtbuchApp {
     sort_asc: bool,
     show_new_window: bool,
     show_edit_window: bool,
+    show_settings: bool,
     edit_status: String,
     edit_date: String,
     edit_time: String,
@@ -173,6 +174,7 @@ impl SchichtbuchApp {
             sort_asc: true,
             show_new_window: false,
             show_edit_window: false,
+            show_settings: false,
             edit_status: String::new(),
             edit_date: String::new(),
             edit_time: String::new(),
@@ -373,29 +375,11 @@ impl eframe::App for SchichtbuchApp {
         egui::Panel::top("top").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Schichtbuch");
-                ui.label("DB:");
-                ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
-                if ui.button("Durchsuchen").clicked() {
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("Datenbank", &["db", "sqlite", "sqlite3"])
-                        .pick_file()
-                    {
-                        self.db_path_str = path.to_string_lossy().to_string();
-                    }
-                }
-                if ui.button("Öffnen").clicked() {
-                    let p = PathBuf::from(&self.db_path_str);
-                    match Store::open(&p) {
-                        Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
-                        Err(e) => self.status_msg = format!("Fehler: {}", e),
-                    }
-                }
                 ui.label("Bearbeiter:");
                 egui::ComboBox::from_id_salt("user_sel").selected_text(if self.current_user.is_empty() {"(wählen)"} else {&self.current_user}).show_ui(ui, |ui| {
                     for r in &self.responsible.clone() { ui.selectable_value(&mut self.current_user, r.clone(), r); }
                 });
-                if self.dark_mode { if ui.button("☀ Hell").clicked() { self.dark_mode = false; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","light");} } }
-                else { if ui.button("🌙 Dunkel").clicked() { self.dark_mode = true; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","dark");} } }
+                if ui.button("Einstellungen").clicked() { self.show_settings = true; }
                 if ui.button("Aktualisieren").clicked() { self.reload(); }
             });
             if !self.status_msg.is_empty() {
@@ -420,6 +404,38 @@ impl eframe::App for SchichtbuchApp {
                 Tab::Ereignislog => self.ui_events(ui),
                 Tab::Stammdaten => self.ui_stamm(ui),
                 Tab::Uebergabe => self.ui_uebergabe(ui),
+            }
+
+            // Settings window
+            if self.show_settings {
+                let ctx = ui.ctx().clone();
+                let mut open = true;
+                egui::Window::new("Einstellungen").resizable(true).default_width(460.0).default_height(320.0).min_width(400.0).scroll([true, true]).open(&mut open).show(&ctx, |ui| {
+                    egui::Frame::default().inner_margin(egui::Margin::same(19)).show(ui, |ui| {
+                        ui.label("Datenbank:");
+                        ui.add(egui::TextEdit::singleline(&mut self.db_path_str).desired_width(f32::INFINITY));
+                        if ui.button("Durchsuchen").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
+                                self.db_path_str = path.to_string_lossy().to_string();
+                            }
+                        }
+                        if ui.button("Öffnen").clicked() {
+                            let p = PathBuf::from(&self.db_path_str);
+                            match Store::open(&p) {
+                                Ok(st) => { self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); }
+                                Err(e) => self.status_msg = format!("Fehler: {}", e),
+                            }
+                        }
+                        ui.separator();
+                        ui.label("Theme:");
+                        if self.dark_mode {
+                            if ui.button("☀ Auf helles Theme wechseln").clicked() { self.dark_mode = false; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","light");} }
+                        } else {
+                            if ui.button("🌙 Auf dunkles Theme wechseln").clicked() { self.dark_mode = true; if let Some(st)=self.store.as_ref(){let _=st.set_setting("theme","dark");} }
+                        }
+                    });
+                });
+                if !open { self.show_settings = false; }
             }
 
             // Detail window
