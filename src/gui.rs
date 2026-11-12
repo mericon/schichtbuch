@@ -9,6 +9,8 @@ use egui_extras::{Column, TableBuilder};
 use std::path::PathBuf;
 
 pub fn run(db: PathBuf, debug: bool) {
+    DEBUG.store(debug, Ordering::Relaxed);
+    dbg(&format!("run called with db={}", db.display()));
     let mut options = eframe::NativeOptions::default();
     options.viewport = options.viewport.with_maximized(true);
     let _ = eframe::run_native(

@@ -13,7 +13,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "schichtbuch", version, about = "Schichtbuch - shift log")]
 struct Cli {
-    #[arg(long, global = true)]
+    #[arg(long)]
     debug: bool,
     #[command(subcommand)]
     cmd: Commands,
