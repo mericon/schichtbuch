@@ -40,6 +40,7 @@ struct SchichtbuchApp {
     db_path: PathBuf,
     db_path_str: String,
     current_user: String,
+    user_selected: bool,
     dark_mode: bool,
     last_applied_dark: Option<bool>,
     stamm_unlocked: bool,
@@ -134,6 +135,7 @@ impl SchichtbuchApp {
             db_path: db.clone(),
             db_path_str: db.to_string_lossy().to_string(),
             current_user: String::new(),
+            user_selected: false,
             dark_mode: true,
             last_applied_dark: None,
             stamm_unlocked: false,
@@ -225,9 +227,6 @@ impl SchichtbuchApp {
         self.responsible_full = store.list_responsible_full().unwrap_or_default();
         self.statuses = store.list_statuses().unwrap_or_default();
         self.gewerke = store.list_gewerke().unwrap_or_default();
-        if self.current_user.is_empty() && !self.responsible.is_empty() {
-            self.current_user = self.responsible[0].clone();
-        }
         // theme
         let t = store.get_setting("theme").unwrap_or_default();
         self.dark_mode = t != "light";
@@ -238,7 +237,7 @@ impl SchichtbuchApp {
         self.prio_entries = store.list_open_priorities().unwrap_or_default();
         self.events = store.list_events(200).unwrap_or_default();
         if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
-        if self.current_user.trim().is_empty() {
+        if !self.user_selected {
             self.aktuell_entries = vec![];
             self.current_entries = vec![];
         } else if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
@@ -498,6 +497,7 @@ impl eframe::App for SchichtbuchApp {
                             for r in &self.responsible.clone() { ui.selectable_value(&mut self.current_user, r.clone(), r); }
                         });
                         if ui.button("OK").clicked() && !self.current_user.is_empty() {
+                            self.user_selected = true;
                             self.show_user_select = false;
                             self.reload();
                         }
