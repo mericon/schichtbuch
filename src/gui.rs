@@ -1045,19 +1045,17 @@ impl SchichtbuchApp {
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
-        egui::ScrollArea::horizontal().show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
             .sense(egui::Sense::click())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Column::initial(62.0).resizable(true))
-            .column(Column::initial(46.0).resizable(true))
-            .column(Column::initial(72.0).resizable(true))
-            .column(Column::initial(95.0).resizable(true))
-            .column(Column::initial(46.0).resizable(true))
-            .column(Column::remainder().resizable(true))
+            .column(Column::initial(80.0).resizable(true))
             .column(Column::initial(50.0).resizable(true))
+            .column(Column::initial(90.0).resizable(true))
+            .column(Column::initial(130.0).resizable(true))
+            .column(Column::initial(50.0).resizable(true))
+            .column(Column::remainder().resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
                 header.col(|ui| { ui.strong("Uhrzeit"); });
@@ -1065,42 +1063,40 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Anlage"); });
                 header.col(|ui| { ui.strong("Prio"); });
                 header.col(|ui| { ui.strong("Störmeldung"); });
-                header.col(|ui| { ui.strong("Speichern"); });
             })
             .body(|mut body| {
                 for e in entries {
                     body.row(16.0, |mut row| {
                         row.col(|ui| { ui.label(e.date.to_string()); });
                         row.col(|ui| { ui.label(&e.time); });
-                        let cur = self.plan_status_edits.get(&e.id).cloned().unwrap_or_else(|| e.status.clone());
                         row.col(|ui| {
+                            let cur = self.plan_status_edits.get(&e.id).cloned().unwrap_or_else(|| e.status.clone());
+                            let mut cur = cur;
                             egui::ComboBox::from_id_salt(format!("plan_status_{}", e.id)).selected_text(&cur).show_ui(ui, |ui| {
                                 for s in ["offen","steht offen","geplant","In Bearbeitung","steht in Bearbeitung","erledigt"] {
-                                    if ui.selectable_value(self.plan_status_edits.entry(e.id.clone()).or_insert_with(|| e.status.clone()), s.to_string(), s).clicked() {}
+                                    if ui.selectable_value(&mut cur, s.to_string(), s).clicked() && cur != e.status {
+                                        if let Some(store) = self.store.as_mut() {
+                                            if let Some(mut ent) = store.get_entry(&e.id).unwrap_or(None) {
+                                                ent.status = cur.clone();
+                                                ent.updated_at = chrono::Local::now().naive_local();
+                                                let _ = store.update_entry(&ent);
+                                                let _ = store.log_event("Status geändert", &self.current_user, &format!("{} - {}", ent.plant, ent.fault), &ent.id);
+                                                self.status_msg = "Gespeichert".into();
+                                                self.reload();
+                                            }
+                                        }
+                                    }
                                 }
                             });
                         });
                         row.col(|ui| { ui.label(&e.plant); });
                         row.col(|ui| { ui.label(e.priority.map(|p| p.to_string()).unwrap_or_default()); });
                         row.col(|ui| { ui.label(&e.fault); });
-                        row.col(|ui| {
-                            if ui.small_button("Speichern").clicked() {
-                                if let Some(store) = self.store.as_mut() {
-                                    if let Some(mut ent) = store.get_entry(&e.id).unwrap_or(None) {
-                                        if let Some(ns) = self.plan_status_edits.get(&e.id) { ent.status = ns.clone(); }
-                                        ent.updated_at = chrono::Local::now().naive_local();
-                                        let _ = store.update_entry(&ent);
-                                        let _ = store.log_event("Status geändert", &self.current_user, &format!("{} - {}", ent.plant, ent.fault), &ent.id);
-                                        self.status_msg = "Gespeichert".into();
-                                        self.reload();
-                                    }
-                                }
-                            }
-                        });
                     });
                 }
             });
-        });
+        ui.separator();
+        if !self.status_msg.is_empty() { ui.label(&self.status_msg); }
     }
 
     fn ui_uebergabe(&mut self, ui: &mut egui::Ui) {
