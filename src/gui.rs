@@ -704,7 +704,6 @@ impl SchichtbuchApp {
         ui.separator();
 
         // Table
-        let mut clicked_id: Option<String> = None;
         let mut detail_id: Option<String> = None;
         let mut copied_sap: String = String::new();
         ui.separator();
@@ -727,7 +726,6 @@ impl SchichtbuchApp {
             .column(Column::initial(90.0).resizable(true))
             .column(Column::initial(80.0).resizable(true))
             .column(Column::initial(120.0).resizable(true))
-            .column(Column::initial(50.0).resizable(true))
             .column(Column::remainder().resizable(true))
             .header(18.0, |mut header| {
                 header.col(|ui| { ui.strong("Datum"); });
@@ -741,7 +739,6 @@ impl SchichtbuchApp {
                 header.col(|ui| { ui.strong("Verantwortlich"); });
                 header.col(|ui| { ui.strong("Gewerk"); });
                 header.col(|ui| { ui.strong("Störmeldung"); });
-                header.col(|ui| { ui.strong("Bearb."); });
                 header.col(|ui| { ui.strong("Maßnahme"); });
             })
             .body(|mut body| {
@@ -768,13 +765,15 @@ impl SchichtbuchApp {
                             ui.label(g);
                         });
                         row.col(|ui| { ui.label(&e.fault); });
-                        row.col(|ui| {
-                            if ui.small_button("Bearb.").clicked() {
-                                clicked_id = Some(e.id.clone());
-                            }
-                        });
                         row.col(|ui| { ui.label(&e.action); });
                         let resp = row.response();
+                        if resp.clicked() {
+                            // open edit window
+                            if let Some(e2) = self.aktuell_entries.iter().find(|x| x.id == e.id).cloned() {
+                                self.load_edit(&e2);
+                                self.show_edit_window = true;
+                            }
+                        }
                         painter.hline(resp.rect.x_range(), resp.rect.bottom(), stroke);
                         if resp.clicked() {
                             detail_id = Some(e.id.clone());
@@ -786,12 +785,6 @@ impl SchichtbuchApp {
         ui.separator();
         if !copied_sap.is_empty() { self.status_msg = format!("SAP {} kopiert", copied_sap); }
         if let Some(id) = detail_id { self.detail_id = Some(id); }
-        if let Some(id) = clicked_id {
-            if let Some(e) = self.aktuell_entries.iter().find(|x| x.id == id).cloned() {
-                self.load_edit(&e);
-                self.show_edit_window = true;
-            }
-        }
 
     }
 
