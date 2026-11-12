@@ -217,7 +217,7 @@ impl SchichtbuchApp {
         if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
             let all = store.list_entries(false).unwrap_or_default();
-            self.aktuell_entries = all.into_iter().filter(|e| e.status != "erledigt" && e.status != "geplant").collect();
+            self.aktuell_entries = all.into_iter().filter(|e| e.status != "geplant").collect();
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.aktuell_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.aktuell_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
                 "status" => {
