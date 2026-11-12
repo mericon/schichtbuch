@@ -238,7 +238,10 @@ impl SchichtbuchApp {
         self.prio_entries = store.list_open_priorities().unwrap_or_default();
         self.events = store.list_events(200).unwrap_or_default();
         if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
-        if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
+        if self.current_user.trim().is_empty() {
+            self.aktuell_entries = vec![];
+            self.current_entries = vec![];
+        } else if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
             let all = store.list_entries(false).unwrap_or_default();
             self.aktuell_entries = all.into_iter().filter(|e| e.status != "geplant").collect();
@@ -496,6 +499,7 @@ impl eframe::App for SchichtbuchApp {
                         });
                         if ui.button("OK").clicked() && !self.current_user.is_empty() {
                             self.show_user_select = false;
+                            self.reload();
                         }
                     });
                 });
