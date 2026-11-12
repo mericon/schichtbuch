@@ -421,13 +421,19 @@ impl eframe::App for SchichtbuchApp {
                     dbg("Datenbank öffnen clicked");
                     if let Some(path) = rfd::FileDialog::new().add_filter("Datenbank", &["db", "sqlite", "sqlite3"]).pick_file() {
                         dbg(&format!("selected path: {}", path.display()));
-                        self.status_msg = "Öffne...".into();
                         let p = path.clone();
                         self.db_path_str = path.to_string_lossy().to_string();
-                        dbg("calling Store::open");
-                        match Store::open(&p) {
-                            Ok(st) => { dbg("Store::open OK"); dbg(&format!("plants in new store: {}", st.list_plants().unwrap_or_default().len())); self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); dbg("reload done"); }
-                            Err(e) => { dbg(&format!("Store::open ERR: {}", e)); self.status_msg = format!("Fehler: {}", e); }
+                        if !p.exists() {
+                            dbg("file does not exist");
+                            self.status_msg = "Datei nicht gefunden".into();
+                            // do not open
+                        } else {
+                            self.status_msg = "Öffne...".into();
+                            dbg("calling Store::open");
+                            match Store::open(&p) {
+                                Ok(st) => { dbg("Store::open OK"); dbg(&format!("plants in new store: {}", st.list_plants().unwrap_or_default().len())); self.store = Some(st); self.db_path = p; self.status_msg = "Datenbank geöffnet".into(); self.reload(); dbg("reload done"); }
+                                Err(e) => { dbg(&format!("Store::open ERR: {}", e)); self.status_msg = format!("Fehler: {}", e); }
+                            }
                         }
                     } else {
                         dbg("no file selected");
