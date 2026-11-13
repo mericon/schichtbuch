@@ -7,6 +7,7 @@ use chrono::NaiveDate;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 pub fn run(db: PathBuf, debug: bool) {
     DEBUG.store(debug, Ordering::Relaxed);
@@ -111,6 +112,7 @@ struct SchichtbuchApp {
     show_settings: bool,
     show_wartung_window: bool,
     show_user_select: bool,
+    last_poll: Option<Instant>,
     edit_status: String,
     edit_date: String,
     edit_time: String,
@@ -216,6 +218,7 @@ impl SchichtbuchApp {
             show_settings: false,
             show_wartung_window: false,
             show_user_select: has_users,
+            last_poll: None,
             edit_status: String::new(),
             edit_date: String::new(),
             edit_time: String::new(),
@@ -423,6 +426,13 @@ impl SchichtbuchApp {
 
 impl eframe::App for SchichtbuchApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.ctx().request_repaint_after(Duration::from_secs(5));
+        let now = Instant::now();
+        let should_poll = self.last_poll.map(|t| t.elapsed() >= Duration::from_secs(5)).unwrap_or(true);
+        if should_poll && self.store.is_some() {
+            self.last_poll = Some(now);
+            self.reload();
+        }
         if self.last_applied_dark != Some(self.dark_mode) {
             if self.dark_mode { ui.ctx().set_theme(egui::Theme::Dark); } else { ui.ctx().set_theme(egui::Theme::Light); }
             self.last_applied_dark = Some(self.dark_mode);
