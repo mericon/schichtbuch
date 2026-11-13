@@ -261,7 +261,7 @@ impl SchichtbuchApp {
         if self.filter_date.trim().is_empty() { self.filter_date = chrono::Local::now().format("%Y-%m-%d").to_string(); }
         if let Ok(d) = self.filter_date.parse::<NaiveDate>() {
             self.current_entries = store.list_current_shift(d, Shift::from_str(&self.filter_shift)).unwrap_or_default();
-            let all = store.list_entries(false).unwrap_or_default();
+            let all = store.list_entries_page(false, 500, 0).unwrap_or_default();
             self.aktuell_entries = all.into_iter().filter(|e| e.status != "geplant").collect();
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.aktuell_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.aktuell_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
@@ -297,7 +297,7 @@ impl SchichtbuchApp {
         }
         // archive: apply filter
         let mut res = if self.archive_query.trim().is_empty() {
-            store.list_entries(true).unwrap_or_default()
+            store.list_entries_page(true, 500, 0).unwrap_or_default()
         } else {
             store.search_archive(&self.archive_query).unwrap_or_default()
         };
@@ -1162,7 +1162,7 @@ impl SchichtbuchApp {
 
     fn ui_planbaustellen(&mut self, ui: &mut egui::Ui) {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
-        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries_page(false, 500, 0).unwrap_or_default().into_iter().filter(|e| e.status == "geplant").collect()).unwrap_or_default();
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)
@@ -1242,7 +1242,7 @@ impl SchichtbuchApp {
         if ui.button("Aktualisieren").clicked() { self.reload(); }
         if ui.button("Neue Wartung").clicked() { self.show_wartung_window = true; }
         ui.separator();
-        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries(false).unwrap_or_default().into_iter().filter(|e| e.wartung && e.status != "erledigt").collect()).unwrap_or_default();
+        let entries: Vec<Entry> = self.store.as_ref().map(|st| st.list_entries_page(false, 500, 0).unwrap_or_default().into_iter().filter(|e| e.wartung && e.status != "erledigt").collect()).unwrap_or_default();
         TableBuilder::new(ui)
             .striped(true)
             .resizable(true)

@@ -55,7 +55,7 @@ impl Store {
                 version INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_entries_date_shift ON entries(date, shift);
-            CREATE INDEX IF NOT EXISTS idx_entries_archived ON entries(archived);
+            CREATE INDEX IF NOT EXISTS idx_entries_archived_date_shift ON entries(archived, date, shift);
             CREATE INDEX IF NOT EXISTS idx_entries_status ON entries(status);
             CREATE INDEX IF NOT EXISTS idx_entries_priority ON entries(priority);
 
@@ -88,7 +88,25 @@ impl Store {
                 user TEXT NOT NULL DEFAULT '',
                 details TEXT NOT NULL DEFAULT '',
                 related_id TEXT NOT NULL DEFAULT ''
+            
+            CREATE VIRTUAL TABLE IF NOT EXISTS entries_fts USING fts5(
+                plant, fault, action, sap_order, responsible, kommentar, gewerk,
+                content='entries', content_rowid='rowid'
             );
+            
+            CREATE TRIGGER IF NOT EXISTS entries_fts_ai AFTER INSERT ON entries BEGIN
+                INSERT INTO entries_fts(rowid, plant, fault, action, sap_order, responsible, kommentar, gewerk)
+                VALUES (new.rowid, new.plant, new.fault, new.action, new.sap_order, new.responsible, new.kommentar, new.gewerk);
+            END;
+            CREATE TRIGGER IF NOT EXISTS entries_fts_ad AFTER DELETE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, plant, fault, action, sap_order, responsible, kommentar, gewerk)
+                VALUES ('delete', old.rowid, old.plant, old.fault, old.action, old.sap_order, old.responsible, old.kommentar, old.gewerk);
+            END;
+            CREATE TRIGGER IF NOT EXISTS entries_fts_au AFTER UPDATE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, plant, fault, action, sap_order, responsible, kommentar, gewerk)
+                VALUES ('delete', old.rowid, old.plant, old.fault, old.action, old.sap_order, old.responsible, old.kommentar, old.gewerk);
+                INSERT INTO entries_fts(rowid, plant, fault, action, sap_order, responsible, kommentar, gewerk)
+                VALUES (new.rowid, new.plant, new.fault, new.action, new.sap_order, new.responsible, new.kommentar, new.gewerk);
             "#,
         )?;
         // migration: add last_shift column if missing
@@ -113,6 +131,7 @@ impl Store {
                 let _ = self.conn.execute("INSERT OR IGNORE INTO master_statuses (name, weight) VALUES (?1, ?2)", rusqlite::params![n, w]);
             }
         }
+        let _ = self.conn.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')", []);
         Ok(())
     }
 
@@ -208,6 +227,16 @@ impl Store {
         Ok(out)
     }
 
+    pub fn list_entries_page(&self, archived: bool, limit: i64, offset: i64) -> Result<Vec<Entry>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id,date,time,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,gewerk,wartung,kommentar,handed_over_to,downtime,action,images,transferred,archived,version,created_at,updated_at,created_by FROM entries WHERE archived=?1 ORDER BY date DESC, priority ASC NULLS LAST, created_at DESC LIMIT ?2 OFFSET ?3"
+        )?;
+        let rows = stmt.query_map(params![archived as i32, limit, offset], |r| row_to_entry(r))?;
+        let mut out = Vec::new();
+        for e in rows { out.push(e?); }
+        Ok(out)
+    }
+
     pub fn list_current_shift(&self, date: NaiveDate, shift: Shift) -> Result<Vec<Entry>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,date,time,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,gewerk,wartung,kommentar,handed_over_to,downtime,action,images,transferred,archived,version,created_at,updated_at,created_by FROM entries WHERE archived=0 AND date=?1 AND shift=?2 ORDER BY priority ASC NULLS LAST, created_at ASC"
@@ -271,11 +300,12 @@ impl Store {
     }
 
     pub fn search_archive(&self, query: &str) -> Result<Vec<Entry>> {
-        let like = format!("%{}%", query);
+        let fts_query: String = query.split_whitespace().map(|t| format!("{}*", t)).collect::<Vec<_>>().join(" ");
+        if fts_query.is_empty() { return Ok(Vec::new()); }
         let mut stmt = self.conn.prepare(
-            "SELECT id,date,time,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,gewerk,wartung,kommentar,handed_over_to,downtime,action,images,transferred,archived,version,created_at,updated_at,created_by FROM entries WHERE archived=1 AND (plant LIKE ?1 OR fault LIKE ?1 OR action LIKE ?1 OR sap_order LIKE ?1 OR responsible LIKE ?1) ORDER BY date DESC, created_at DESC"
+            "SELECT id,date,time,shift,last_shift,last_editor,status,priority,plant,sap_order,fault,responsible,gewerk,wartung,kommentar,handed_over_to,downtime,action,images,transferred,archived,version,created_at,updated_at,created_by FROM entries WHERE rowid IN (SELECT rowid FROM entries_fts WHERE entries_fts MATCH ?1) AND archived=1 ORDER BY date DESC, created_at DESC"
         )?;
-        let rows = stmt.query_map(params![like], |r| row_to_entry(r))?;
+        let rows = stmt.query_map(params![fts_query], |r| row_to_entry(r))?;
         let mut out = Vec::new();
         for e in rows { out.push(e?); }
         Ok(out)
