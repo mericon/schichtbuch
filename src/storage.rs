@@ -88,6 +88,7 @@ impl Store {
                 user TEXT NOT NULL DEFAULT '',
                 details TEXT NOT NULL DEFAULT '',
                 related_id TEXT NOT NULL DEFAULT ''
+            );
             
             CREATE VIRTUAL TABLE IF NOT EXISTS entries_fts USING fts5(
                 plant, fault, action, sap_order, responsible, kommentar, gewerk,
@@ -107,6 +108,7 @@ impl Store {
                 VALUES ('delete', old.rowid, old.plant, old.fault, old.action, old.sap_order, old.responsible, old.kommentar, old.gewerk);
                 INSERT INTO entries_fts(rowid, plant, fault, action, sap_order, responsible, kommentar, gewerk)
                 VALUES (new.rowid, new.plant, new.fault, new.action, new.sap_order, new.responsible, new.kommentar, new.gewerk);
+            END;
             "#,
         )?;
         // migration: add last_shift column if missing
