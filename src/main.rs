@@ -22,6 +22,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Init { db: PathBuf },
+    SeedDemo { db: PathBuf },
     Import { xlsx: PathBuf, #[arg(long)] db: PathBuf },
     Stats { #[arg(long)] db: PathBuf },
     List { #[arg(long)] db: PathBuf, #[arg(long)] archived: bool, #[arg(long)] shift: Option<String>, #[arg(long)] date: Option<String> },
@@ -68,6 +69,44 @@ fn main() {
             let s = Store::open(&db).expect("init failed");
             println!("initialized {}", db.display());
             let _ = s;
+        }
+        Commands::SeedDemo { db } => {
+            let store = Store::open(&db).expect("open failed");
+            for i in 1..=10 { store.add_plant(&format!("Anlage {}", i)).unwrap(); }
+            for i in 1..=10 { store.add_responsible(&format!("Benutzer {}", i)).unwrap(); }
+            for i in 1..=10 {
+                let mut e = Entry::new(chrono::NaiveDate::from_ymd_opt(2026,11,12).unwrap(), Shift::from_str("Früh"));
+                e.plant = format!("Anlage {}", (i % 10) + 1);
+                e.status = "offen".to_string();
+                e.sap_order = format!("SAP{}", 1000 + i);
+                e.fault = format!("Störung {}", i);
+                e.responsible = format!("Benutzer {}", (i % 10) + 1);
+                e.priority = Some(i);
+                e.last_editor = "Demo".to_string();
+                store.insert_entry(&e).unwrap();
+            }
+            for i in 1..=5 {
+                let mut e = Entry::new(chrono::NaiveDate::from_ymd_opt(2026,11,12).unwrap(), Shift::from_str("Früh"));
+                e.wartung = true;
+                e.plant = format!("Anlage {}", i);
+                e.status = "offen".to_string();
+                e.sap_order = format!("W{}", 2000 + i);
+                e.kommentar = format!("Wartungskommentar {}", i);
+                e.responsible = format!("Benutzer {}", i);
+                e.last_editor = "Demo".to_string();
+                store.insert_entry(&e).unwrap();
+            }
+            for i in 1..=2 {
+                let mut e = Entry::new(chrono::NaiveDate::from_ymd_opt(2026,11,12).unwrap(), Shift::from_str("Früh"));
+                e.status = "geplant".to_string();
+                e.plant = format!("Anlage {}", 9 + i);
+                e.sap_order = format!("P{}", 3000 + i);
+                e.fault = format!("Planarbeit {}", i);
+                e.responsible = format!("Benutzer {}", 9 + i);
+                e.last_editor = "Demo".to_string();
+                store.insert_entry(&e).unwrap();
+            }
+            println!("Demo-DB erstellt");
         }
         Commands::Import { xlsx, db } => {
             let store = open(&db);
