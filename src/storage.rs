@@ -456,8 +456,8 @@ impl Store {
         let date = h.date.to_string();
 
         h.archived_count = tx.execute(
-            "UPDATE entries SET archived=1, updated_at=?1 WHERE archived=0 AND status='erledigt' AND date=?2 AND shift=?3",
-            params![now, date, h.from_shift.as_str()])? as i64;
+            "UPDATE entries SET archived=1, updated_at=?1 WHERE archived=0 AND status='erledigt'",
+            params![now])? as i64;
 
         h.carried_count = tx.execute(
             "UPDATE entries SET shift=?1, last_shift=?2, updated_at=?3 WHERE archived=0 AND status<>'erledigt' AND date=?4 AND shift=?2",
