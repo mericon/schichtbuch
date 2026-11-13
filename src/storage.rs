@@ -285,14 +285,29 @@ impl Store {
     /// created in `to` (active). Frozen originals remain until overwritten by a
     /// later takeover.
     pub fn carry_over_open(&self, from: Shift, to: Shift, date: Option<NaiveDate>) -> Result<i64> {
-        let mut sql = "UPDATE entries SET shift=?1, last_shift=?2, updated_at=?3 WHERE archived=0 AND status<>'erledigt' AND shift=?4".to_string();
+        let advance_date = matches!(from, Shift::Nacht);
+        let new_date = date.map(|d| if advance_date { d + chrono::Duration::days(1) } else { d });
+
+        let mut sql = if advance_date {
+            "UPDATE entries SET date=?1, shift=?2, last_shift=?3, updated_at=?4 WHERE archived=0 AND status<>'erledigt' AND shift=?5".to_string()
+        } else {
+            "UPDATE entries SET shift=?1, last_shift=?2, updated_at=?3 WHERE archived=0 AND status<>'erledigt' AND shift=?4".to_string()
+        };
         let mut args: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-        args.push(Box::new(to.as_str().to_string()));
-        args.push(Box::new(from.as_str().to_string()));
-        args.push(Box::new(chrono::Local::now().naive_local().to_string()));
-        args.push(Box::new(from.as_str().to_string()));
-        if let Some(d) = date {
-            sql.push_str(" AND date=?5");
+        if advance_date {
+            args.push(Box::new(new_date.unwrap().to_string()));
+            args.push(Box::new(to.as_str().to_string()));
+            args.push(Box::new(from.as_str().to_string()));
+            args.push(Box::new(chrono::Local::now().naive_local().to_string()));
+            args.push(Box::new(from.as_str().to_string()));
+        } else {
+            args.push(Box::new(to.as_str().to_string()));
+            args.push(Box::new(from.as_str().to_string()));
+            args.push(Box::new(chrono::Local::now().naive_local().to_string()));
+            args.push(Box::new(from.as_str().to_string()));
+        }
+        if let Some(d) = new_date {
+            if advance_date { sql.push_str(" AND date=?6"); } else { sql.push_str(" AND date=?5"); }
             args.push(Box::new(d.to_string()));
         }
         let n = self.conn.execute(&sql, rusqlite::params_from_iter(args.iter().map(|b| b.as_ref())))?;
@@ -522,6 +537,7 @@ impl Store {
 
 fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
     let date_str: String = r.get(1)?;
+    let date: NaiveDate = date_str.parse().map_err(|_| rusqlite::Error::InvalidParameterName("bad date".to_string()))?;
     let time_str: String = r.get(2)?;
     let last_shift: Option<String> = r.get(4)?;
     let last_editor: String = r.get(5)?;
@@ -529,7 +545,7 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
     let updated: String = r.get(23)?;
     Ok(Entry {
         id: r.get(0)?,
-        date: date_str.parse().unwrap_or_else(|_| chrono::Local::now().date_naive()),
+        date,
         time: time_str,
         shift: Shift::from_str(&r.get::<_,String>(3)?),
         last_shift: last_shift.map(|s| Shift::from_str(&s)),
