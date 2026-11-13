@@ -51,8 +51,8 @@ impl Store {
                 archived INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                created_by TEXT NOT NULL DEFAULT ''
-                version INTEGER NOT NULL DEFAULT 0,
+                created_by TEXT NOT NULL DEFAULT '',
+                version INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_entries_date_shift ON entries(date, shift);
             CREATE INDEX IF NOT EXISTS idx_entries_archived ON entries(archived);
@@ -177,9 +177,9 @@ impl Store {
                 e.images,
                 e.transferred as i32,
                 e.archived as i32,
-                e.version,
                 e.updated_at.to_string(),
                 e.created_by,
+                e.version,
             ],
         )?;
         Ok(n)
@@ -525,4 +525,7 @@ fn row_to_entry(r: &rusqlite::Row) -> rusqlite::Result<Entry> {
         created_by: r.get(24)?,
     })
 }
+
+
+
 
