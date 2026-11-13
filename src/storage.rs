@@ -7,13 +7,32 @@ pub struct Store {
     pub conn: Connection,
 }
 
+fn is_network_path(p: &std::path::Path) -> bool {
+    let s = p.to_string_lossy();
+    s.starts_with(r"\\") || s.starts_with("//")
+}
+
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
         let conn = Connection::open(path)?;
         // multi-user friendly settings
-        let _ = conn.pragma_update(None, "journal_mode", "WAL");
-        conn.pragma_update(None, "busy_timeout", 30000)?;
-        conn.pragma_update(None, "synchronous", "NORMAL")?;
+        conn.busy_timeout(std::time::Duration::from_secs(30))?;
+
+        let want_wal = !is_network_path(path);
+        let target = if want_wal { "WAL" } else { "DELETE" };
+
+        let actual: String = conn.query_row(
+            &format!("PRAGMA journal_mode = {}", target), [], |r| r.get(0))?;
+
+        if !actual.eq_ignore_ascii_case(target) {
+            return Err(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY),
+                Some(format!("journal_mode ist '{}', erwartet '{}'", actual, target)),
+            ));
+        }
+
+        conn.pragma_update(None, "synchronous", if want_wal { "NORMAL" } else { "FULL" })?;
+        conn.pragma_update(None, "foreign_keys", "ON")?;
         let store = Self { conn };
         store.init_schema()?;
         Ok(store)
