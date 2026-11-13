@@ -137,3 +137,61 @@ pub struct Responsible {
     pub schicht_vk: String,
     pub gewerk: String,
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct EntryForm {
+    pub date: String,
+    pub time: String,
+    pub shift: String,
+    pub plant: String,
+    pub status: String,
+    pub sap: String,
+    pub fault: String,
+    pub responsible: String,
+    pub gewerk: String,
+    pub priority: String,
+    pub action: String,
+    pub downtime: String,
+    pub handed: String,
+    pub kommentar: String,
+    pub images: String,
+}
+
+impl EntryForm {
+    pub fn from_entry(e: &Entry) -> Self {
+        Self {
+            date: e.date.to_string(),
+            time: e.time.clone(),
+            shift: e.shift.as_str().to_string(),
+            plant: e.plant.clone(),
+            status: e.status.clone(),
+            sap: e.sap_order.clone(),
+            fault: e.fault.clone(),
+            responsible: e.responsible.clone(),
+            gewerk: e.gewerk.clone(),
+            priority: e.priority.map(|p| p.to_string()).unwrap_or_default(),
+            action: e.action.clone(),
+            downtime: e.downtime.clone(),
+            handed: e.handed_over_to.clone(),
+            kommentar: e.kommentar.clone(),
+            images: e.images.clone(),
+        }
+    }
+    pub fn apply_to(&self, e: &mut Entry) {
+        if let Ok(d) = self.date.parse() { e.date = d; }
+        e.time = self.time.clone();
+        e.shift = Shift::from_str(&self.shift);
+        e.plant = self.plant.clone();
+        e.status = self.status.clone();
+        e.sap_order = self.sap.clone();
+        e.fault = self.fault.clone();
+        e.responsible = self.responsible.clone();
+        e.gewerk = self.gewerk.clone();
+        e.priority = self.priority.trim().parse().ok();
+        e.action = self.action.clone();
+        e.downtime = self.downtime.clone();
+        e.handed_over_to = self.handed.clone();
+        e.kommentar = self.kommentar.clone();
+        e.images = self.images.clone();
+    }
+}

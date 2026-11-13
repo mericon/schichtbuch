@@ -281,6 +281,15 @@ impl SchichtbuchApp {
                 }
                 _ => {}
             }
+            match self.sort_column.as_str() {
+                "time" => { if self.sort_asc { self.aktuell_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.aktuell_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
+                "status" => {
+                    let w = |name: &str| self.statuses.iter().find(|(n,_)| n == name).map(|(_,w)| *w).unwrap_or(i32::MAX);
+                    if self.sort_asc { self.aktuell_entries.sort_by(|a,b| w(&a.status).cmp(&w(&b.status)).then(a.status.cmp(&b.status))); }
+                    else { self.aktuell_entries.sort_by(|a,b| w(&b.status).cmp(&w(&a.status)).then(b.status.cmp(&a.status))); }
+                }
+                _ => {}
+            }
             // sort
             match self.sort_column.as_str() {
                 "time" => { if self.sort_asc { self.current_entries.sort_by(|a,b| a.time.cmp(&b.time)); } else { self.current_entries.sort_by(|a,b| b.time.cmp(&a.time)); } }
