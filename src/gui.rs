@@ -348,6 +348,7 @@ impl SchichtbuchApp {
             e.images = self.edit_images.clone();
             e.updated_at = chrono::Local::now().naive_local();
             match store.update_entry(&e) {
+                Ok(0) => { self.status_msg = "Wurde von jemand anderem geaendert - bitte neu laden".into(); }
                 Ok(_) => { let _ = store.log_event("Eintrag bearbeitet", &self.current_user, &format!("{} - {}", e.plant, e.fault), &e.id); self.status_msg = "Gespeichert".into(); self.reload(); }
                 Err(err) => self.status_msg = format!("Fehler: {}", err),
             }
@@ -391,9 +392,7 @@ impl SchichtbuchApp {
         self.ho_to = t.to_string();
         let from = Shift::from_str(&self.ho_from);
         let to = Shift::from_str(&self.ho_to);
-        let archived = store.archive_completed(Some(date), Some(from)).unwrap_or(0);
-        let carried = store.carry_over_open(from, to, Some(date)).unwrap_or(0);
-        let h = crate::domain::Handover {
+        let mut h = crate::domain::Handover {
             id: uuid::Uuid::new_v4().to_string(),
             from_shift: from,
             to_shift: to,
@@ -401,15 +400,14 @@ impl SchichtbuchApp {
             performed_by: self.ho_user.clone(),
             taken_over_by: if self.ho_taken_by.trim().is_empty() { self.ho_user.clone() } else { self.ho_taken_by.clone() },
             performed_at: chrono::Local::now().naive_local(),
-            archived_count: archived,
-            carried_count: carried,
+            archived_count: 0,
+            carried_count: 0,
         };
-        match store.record_handover(&h) {
+        match store.perform_handover(&mut h) {
             Ok(_) => {
-                let _ = store.log_event("Schichtübergabe", &self.ho_user, &format!("von {} nach {} | übergeben von {} | übernommen von {} | archiviert={} übernommen={}", self.ho_from, self.ho_to, self.ho_user, if self.ho_taken_by.trim().is_empty() { &self.ho_user } else { &self.ho_taken_by }, archived, carried), &h.id);
-                self.status_msg = format!("Übergabe {} -> {}: archiviert={}, übernommen={}", self.ho_from, self.ho_to, archived, carried); self.reload();
+                self.status_msg = format!("Übergabe {} -> {}: archiviert={}, übernommen={}", self.ho_from, self.ho_to, h.archived_count, h.carried_count); self.reload();
             }
-            Err(e) => self.status_msg = format!("err: {}", e),
+            Err(e) => self.status_msg = format!("Fehler: {}", e),
         }
     }
 }
